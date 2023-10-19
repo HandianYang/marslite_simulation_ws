@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- Decide whether or not APF obstacle avoidance will be used. -->
+  <arg name="use_apf" default="true"/>
+
+  <!-- Decide whether or not the robot status will be printed. -->
+  <arg name="message_enabled" default="true"/>
+
+  <!-- Decide whether or not the robot will gradually slow down
+        when there's no incoming inputs. -->
+  <arg name="auto_slow_down_enabled" default="true"/>
+
+  <!-- Launch the `teleoperation_keyboard` node. -->
+  <node pkg="marslite_navigation" type="teleoperation_keyboard" name="teleoperation_keyboard"  output="screen">
+    <param name="use_apf" value="$(arg use_apf)"/>
+    <param name="message_enabled" value="$(arg message_enabled)"/>
+    <param name="auto_slow_down_enabled" value="$(arg auto_slow_down_enabled)"/>
+    <rosparam file="$(find marslite_navigation)/config/teleop_params.yaml"/>
+  </node>
+
+</launch>

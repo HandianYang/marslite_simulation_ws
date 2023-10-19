@@ -1,0 +1,7 @@
+force_stop_distance: 0.5              # unit: m
+constant_linear_velocity_limit: 0.7   # unit: m/s
+constant_angular_velocity_limit: 0.3  # unit: m/s 
+constant_linear_velocity_step: 0.01   # unit: m/s
+constant_angular_velocity_step: 0.05  # unit: m/s
+predict_time_interval: 2              # unit: s
+sector_half_range: 90                 # unit: X

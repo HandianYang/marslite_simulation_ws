@@ -1,0 +1,4 @@
+force_stop_distance: 0.5        # unit: m
+constant_velocity_limit: 0.7    # unit: m/s
+predict_time_interval: 2        # unit: s
+sector_half_range: 90           # unit: X

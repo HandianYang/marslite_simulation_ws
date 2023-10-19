@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>marslite_navigation</name>
+  <version>1.0.2</version>
+  <description>
+    The package provides roslaunch scripts for starting the navigation.
+  </description>
+  <license>Apache 2.0</license>
+  <maintainer email="ych0610765@gmail.com">Handian Yang</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>amcl</exec_depend>
+  <exec_depend>map_server</exec_depend>
+  <exec_depend>move_base</exec_depend>
+  
+  <build_depend>geometry_msgs</build_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+
+  <build_depend>message_filters</build_depend>
+  <exec_depend>message_filters</exec_depend>
+
+  <build_depend>roscpp</build_depend>
+  <exec_depend>roscpp</exec_depend>
+  
+  <build_depend>rospy</build_depend>
+  <exec_depend>rospy</exec_depend>
+
+  <build_depend>sensor_msgs</build_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+</package>

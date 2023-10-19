@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- Decide whether or not APF obstacle avoidance will be used. -->
+  <!-- The pipeline is set as follows:
+        (1) If isUserDirectControl:=true, then the `teleop_joystick` node 
+            directly published messages to topic `cmd_vel` in `Twist` type;
+        (2) If isUserDirectControl:=false, then the `teleop_joystick` node
+            published messages to topic `keyboard_ts` in `TwistStamped`
+            type, while the `artificial_potential_field` node subscribed
+            the topic immediately for providing some assistance. -->
+  <arg name="user_direct_control" default="true"/>
+
+  <!-- Decide whether or not the robot status will be printed. -->
+  <arg name="message_enabled" default="true"/>
+  
+  <!-- Launch the `teleop_joystick` node. -->
+  <node pkg="marslite_navigation" type="teleop_joystick" name="teleop_joystick"  output="screen">
+    <param name="user_direct_control" value="$(arg user_direct_control)"/>
+    <param name="message_enabled" value="$(arg message_enabled)"/>
+  </node>
+
+</launch>
