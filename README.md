@@ -28,7 +28,7 @@ Docker Hub helps you create, manage, and deliver your team's container applicati
 
 To utilize the simulator system, users are required to download my designed image. Run the following command to obtain the latest version of my Docker image (click [here](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to check the tagname):
 ```Shell
-docker pull handianyang/marslite_simulation:v1.0.0-Base
+docker pull handianyang/marslite_simulation:v1.1.1-MPC
 ```
 
 <!--
@@ -55,9 +55,19 @@ Open a new terminal window (or press `Ctrl+Alt+t`) and reach to the root of the 
 cd ~/marslite_simulation_ws
 ```
 
-Run the following command to enter the Docker container based on `handianyang/marslite_simulation` image:
+Run the following command to enter the Docker container based on the latest tag of `handianyang/marslite_simulation` image:
 ```Shell
 source docker_run.sh
+```
+
+**(Optional)** You could specify the older version of the image by adding version id (consecutive numbers with no dots) as parameters. 
+```Shell
+source docker_run.sh <tag_number>
+```
+
+For example, to invoke a container with version "v1.1.0-MPC", simply run:
+```Shell
+source docker_run.sh 110
 ```
 
 Specifically, the above bash script can be executed when you expect to:
@@ -66,7 +76,6 @@ Specifically, the above bash script can be executed when you expect to:
 - restart an exited container (when you've left the container previously)
 
 If you work with parallel terminals, just repeat the above two instructions.
-
 
 ### Build the ROS workspace
 
@@ -107,13 +116,13 @@ From now on, you can begin your development! For detailed features and their cor
 
 ### Remove the Docker container
 
-If you somehow mess up with the existing container (e.g. having trouble `apt-get update`), another option is to give up any changes you have made in this contaminated container.
+If you somehow mess up with the existing container (e.g. having trouble `apt-get update`), or you would like to test another projects outside the current working directory, another option is to give up any changes you have made in this contaminated container.
 
 Simply run the command **outside** the Docker container:
 ```Shell
 docker rm marslite
 ```
-where `marslite` is the default alias of your container.
+where `marslite` is the default alias of the default container name.
 
 
 
@@ -140,7 +149,7 @@ roslaunch mars_lite_description spawn_mars.launch
 roslaunch marslite_navigation slam_gmapping.launch
 ```
 
-2. Launch **navigation with  A* and DWA**:
+2. Launch **navigation** with  A* and DWA:
 ```Shell
 roslaunch marslite_navigation navigation.launch
 ```
