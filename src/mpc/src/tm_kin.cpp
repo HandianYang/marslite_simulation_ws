@@ -25,7 +25,7 @@
  *  Created on: Feb 26, 2016
  *      Author: yhtsai
  */
-#include "tm_kinematics/tm_kin.h"
+#include "mpc/tm_kin.h"
 #include <math.h>
 #include <stdio.h>
 

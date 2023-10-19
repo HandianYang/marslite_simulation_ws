@@ -1,32 +1,24 @@
-cmake_minimum_required(VERSION 3.0)
-
-set(CMAKE_CXX_STANDARD 11)
-##set_directory_properties(PROPERTIES COMPILE_OPTIONS "-fno-stack-protector")
-
-project(mpc)
+cmake_minimum_required(VERSION 3.0.2)
+project(detection_msgs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
+  message_generation
+  nav_msgs
   roscpp
   rospy
-  std_msgs
   sensor_msgs
-  geometry_msgs
-  tf
-  apriltags_ros
-  darknet_ros_msgs
+  std_msgs
+  visualization_msgs
   pcl_ros
   pcl_conversions
 )
-find_package(OsqpEigen)
-find_package(realsense2 2.34.0)
-# 2.32.1
-find_package(Eigen3)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -62,18 +54,25 @@ find_package(Eigen3)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  BBox2D.msg
+  Detection2D.msg
+
+  Det3D.msg
+  Det3DArray.msg
+
+  Track3D.msg
+  Track3DArray.msg
+
+  StringArray.msg
+)
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  Detection2DTrig.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -83,10 +82,15 @@ find_package(Eigen3)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
+  std_msgs
+  visualization_msgs
+  detection_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -118,9 +122,9 @@ find_package(Eigen3)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES tm700_kin mpc
-  CATKIN_DEPENDS roscpp rospy std_msgs sensor_msgs geometry_msgs tf apriltags_ros darknet_ros_msgs pcl_ros pcl_conversions
+#  INCLUDE_DIRS include
+#  LIBRARIES detection_msgs
+#  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -131,23 +135,14 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
+# include
   ${catkin_INCLUDE_DIRS}
-  ${realsense2_INCLUDE_DIR}
 )
-
-include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/mpc.cpp
+#   src/${PROJECT_NAME}/detection_msgs.cpp
 # )
-
-add_library(tm700_kin src/tm_kin.cpp)
-set_target_properties(tm700_kin PROPERTIES COMPILE_DEFINITIONS "TM700_DH_PARAMS")
-
-add_library(mpc src/mpc.cpp)
-target_link_libraries(mpc ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin ${realsense2_LIBRARY})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -157,7 +152,7 @@ target_link_libraries(mpc ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin ${r
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/mpc_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/detection_msgs_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -183,7 +178,7 @@ target_link_libraries(mpc ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin ${r
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
+# catkin_install_python(PROGRAMS
 #   scripts/my_python_script
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
@@ -196,12 +191,11 @@ target_link_libraries(mpc ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin ${r
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS tm700_kin mpc
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
+# install(TARGETS ${PROJECT_NAME}
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+# )
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
@@ -222,17 +216,10 @@ install(TARGETS tm700_kin mpc
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_mpc.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_detection_msgs.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-add_executable(obstacles_detection src/obstacles_detection.cpp)
-target_link_libraries(obstacles_detection ${catkin_LIBRARIES})
-
-
-add_executable(mpc_node src/mpc_node.cpp)
-target_link_libraries(mpc_node ${catkin_LIBRARIES} mpc)
