@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+  Techman robot common bringup.  Starts tm driver node and robot state
+  publisher (translates joint positions to propper tfs).
+  
+  Usage:
+    tm_common.launch robot_ip:=<value>
+-->
+<launch>
+  <!-- robot_ip: IP-address of the robot's socket-messaging server -->
+  <arg name="prefix" default="" />
+  <arg name="robot_ip" />
+  <arg name="servo_time" />
+  <arg name="min_payload" />
+  <arg name="max_payload" />
+  <arg name="output" default="screen"/>
+  <!-- The max_velocity parameter is only used for debugging in the ur_driver. It's not related to actual velocity limits -->
+  <arg name="max_velocity" default="10.0"/> <!-- [rad/s] -->
+  <arg name="base_frame" default="$(arg prefix)base_link" />
+  <arg name="tool_frame" default="$(arg prefix)tool0_controller" />
+
+  <!-- driver -->
+  <node name="tm_driver_t" pkg="tm_driver_t" type="tm_driver_t" output="$(arg output)">
+  <!-- remap the joint_states of tm_robot to differentiate them with joint_states of the whole mobile manipulator system. Also remap the joint_trajectory action name -->
+    <remap from="joint_states" to="tm_joint_states"/>
+    <remap from="joint_trajectory_action" to="tm_joint_trajectory_action"/>
+
+  <!-- copy the specified IP address to be consistant with ROS-Industrial spec. -->
+    <param name="prefix" type="str" value="$(arg prefix)" />
+    <param name="robot_ip_address" type="str" value="$(arg robot_ip)" />
+    <param name="servo_time" type="double" value="$(arg servo_time)" />
+    <param name="min_payload" type="double" value="$(arg min_payload)" />
+    <param name="max_payload" type="double" value="$(arg max_payload)" />
+    <param name="max_velocity" type="double" value="$(arg max_velocity)" />
+    <param name="base_frame" type="str" value="$(arg base_frame)" />
+    <param name="tool_frame" type="str" value="$(arg tool_frame)" />
+  </node>
+</launch>
