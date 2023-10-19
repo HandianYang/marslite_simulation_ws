@@ -11,7 +11,7 @@
   <arg name="auto_slow_down_enabled" default="true"/>
 
   <!-- Launch the `teleoperation_keyboard` node. -->
-  <node pkg="marslite_navigation" type="teleoperation_keyboard" name="teleoperation_keyboard"  output="screen">
+  <node pkg="marslite_navigation" type="teleop_keyboard" name="teleop_keyboard"  output="screen">
     <param name="use_apf" value="$(arg use_apf)"/>
     <param name="message_enabled" value="$(arg message_enabled)"/>
     <param name="auto_slow_down_enabled" value="$(arg auto_slow_down_enabled)"/>

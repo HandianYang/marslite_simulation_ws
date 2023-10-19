@@ -140,9 +140,9 @@ roslaunch mars_lite_description spawn_mars.launch
 roslaunch marslite_navigation slam_gmapping.launch
 ```
 
-2. Launch **AMCL**:
+2. Launch **navigation with  A* and DWA**:
 ```Shell
-roslaunch marslite_navigation amcl.launch
+roslaunch marslite_navigation navigation.launch
 ```
 
 3. Directly control the robot with keyboard inputs:
@@ -153,17 +153,6 @@ roslaunch marslite_navigation teleop_keyboard.launch
 4. Directly control the robot with joystick inputs:
 ```Shell
 roslaunch marslite_navigation teleop_joystick.launch
-```
-
-[TODO] In future, all these instructions can be simplified within 'navigation_main_node.cpp'. In that case, there's no need to separately execute the commands.
-```Shell
-roslaunch marslite_navigation navigation_main.launch
-```
-
-#### [Note]
-All features (except keyboard control) can be visualized with RVIZ by appending `open_rviz:=true` behind the commands. For example, to launch SLAM function with RVIZ:
-```Shell
-roslaunch marslite_navigation slam_gmapping.launch open_rviz:=true
 ```
 
 

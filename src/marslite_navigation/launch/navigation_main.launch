@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-    <node pkg="marslite_navigation" type="navigation_main" name="navigation_main"  output="screen">
-    </node>
-</launch>
