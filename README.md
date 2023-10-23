@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Thr, Oct 19, 2023
+* Last update: Mon, Oct 23, 2023
 
 ## Prerequisites
 
@@ -55,12 +55,23 @@ Open a new terminal window (or press `Ctrl+Alt+t`) and reach to the root of the 
 cd ~/marslite_simulation_ws
 ```
 
+#### 1. Enter a container with the latest image tag
+
 Run the following command to enter the Docker container based on the latest tag of `handianyang/marslite_simulation` image:
 ```Shell
 source docker_run.sh
 ```
 
-**(Optional)** You could specify the older version of the image by adding version id (consecutive numbers with no dots) as parameters. 
+This command creates a Docker container named `marslite` and guides you in.
+
+Specifically, the above bash script can be executed when you expect to:
+- launch a new container
+- enter a running container (when you work with multiple terminal windows)
+- restart an exited container (when you've left the container previously)
+
+#### 2. Enter a container with the specific image tag
+
+You could specify the previous version of the image by adding version id (only consecutive numbers with no dots) as parameters. 
 ```Shell
 source docker_run.sh <tag_number>
 ```
@@ -70,12 +81,9 @@ For example, to invoke a container with version "v1.1.0-MPC", simply run:
 source docker_run.sh 110
 ```
 
-Specifically, the above bash script can be executed when you expect to:
-- launch a new container
-- enter a running container (when you work with multiple terminal windows)
-- restart an exited container (when you've left the container previously)
+This command creates a Docker container named `marslite_test` and guides you in.
 
-If you work with parallel terminals, just repeat the above two instructions.
+Note that if you work with parallel terminals, ALWAYS remember to include the `<tag_number>` right behind the command (`source docker_run.sh <tag_number>`) for EVERY terminal window.
 
 ### Build the ROS workspace
 
@@ -120,9 +128,12 @@ If you somehow mess up with the existing container (e.g. having trouble `apt-get
 
 Simply run the command **outside** the Docker container:
 ```Shell
-docker rm marslite
+docker rm marslite  # for container based on latest tag
 ```
-where `marslite` is the default alias of the default container name.
+where `marslite` is the default name of the container. Or if your container was based on previous version, remember to change the container name to `marslite_test`:
+```Shell
+docker rm marslite_test  # for container based on previous tag
+```
 
 
 
@@ -137,7 +148,7 @@ Note that every command should be executed **on the Docker container** rather th
 roslaunch mars_lite_description gazebo_supermarket.launch
 ```
 
-2. Spawn a Marslite robot in an **existing Gazebo world**:
+2. **(Optional)** Spawn a Marslite robot in an **existing Gazebo world**:
 ```Shell
 roslaunch mars_lite_description spawn_mars.launch
 ```
