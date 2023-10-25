@@ -3,7 +3,7 @@ xhost +local:docker
 
 # Setup specific docker image and tag
 DOCKER_IMAGE="handianyang/marslite_simulation"
-DOCKER_LATEST_TAG="v1.1.1-MPC"
+DOCKER_LATEST_TAG="v1.1.2-MPC-Bugfix"
 CONTAINER_DEFAULT_NAME="marslite"
 
 # Setup the style of color
@@ -36,6 +36,8 @@ if [ $# -gt 0 ]; then
 	    DOCKER_TAG="v1.0.0-Base"
     elif [ "$1" == "110" ]; then
     	DOCKER_TAG="v1.1.0-MPC"
+    elif [ "$1" == "111" ]; then
+    	DOCKER_TAG="v1.1.1-MPC"
     fi
     CONTAINER_NAME="${CONTAINER_DEFAULT_NAME}_prev"
 else

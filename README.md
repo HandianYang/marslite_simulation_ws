@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Mon, Oct 23, 2023
+* Last update: Wed, Oct 25, 2023
 
 ## Prerequisites
 
@@ -28,15 +28,13 @@ Docker Hub helps you create, manage, and deliver your team's container applicati
 
 To utilize the simulator system, users are required to download my designed image. Run the following command to obtain the latest version of my Docker image (click [here](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to check the tagname):
 ```Shell
-docker pull handianyang/marslite_simulation:v1.1.1-MPC
+docker pull handianyang/marslite_simulation:v1.1.2-MPC-Bugfix
 ```
 
-<!--
-Of course you could check [the tags of my image](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to specify older versions, but the complete features of the system are not guarenteed. For example, to obtain the base image (the most primitive one):
+**[Optional]** Of course you could check [the tags of my image](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to specify older versions, but the complete features of the system are not guarenteed. For example, to obtain the base image (the most primitive one):
 ```Shell
 docker pull handianyang/marslite_simulation:v1.0.0-Base
 ```
--->
 
 ## Usage
 
@@ -81,9 +79,9 @@ For example, to invoke a container with version "v1.1.0-MPC", simply run:
 source docker_run.sh 110
 ```
 
-This command creates a Docker container named `marslite_test` and guides you in.
+This command creates a Docker container named `marslite_prev` and guides you in.
 
-Note that if you work with parallel terminals, ALWAYS remember to include the `<tag_number>` right behind the command (`source docker_run.sh <tag_number>`) for EVERY terminal window.
+**[Note]** If you work with parallel terminals, ALWAYS remember to include the `<tag_number>` right behind the command (`source docker_run.sh <tag_number>`) for EVERY terminal window.
 
 ### Build the ROS workspace
 
@@ -132,7 +130,7 @@ docker rm marslite  # for container based on latest tag
 ```
 where `marslite` is the default name of the container. Or if your container was based on previous version, remember to change the container name to `marslite_test`:
 ```Shell
-docker rm marslite_test  # for container based on previous tag
+docker rm marslite_prev  # for container based on previous tag
 ```
 
 
