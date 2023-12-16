@@ -21,6 +21,7 @@ protected:
     size_t buttonsNum_;
     sensor_msgs::Joy joy_;
 
+    // mutex
     std::mutex joyMutex_;
     
     void joyMsgCallback(const sensor_msgs::JoyConstPtr& joy);

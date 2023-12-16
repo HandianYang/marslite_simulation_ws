@@ -4,17 +4,12 @@ namespace marslite_navigation {
 
 bool TeleopJoystick::run()
 {
-    ROS_ASSERT(parseParameters());
-	
-	linearVelocityLimit_.front_ = constantLinearVelocityLimit_;
-	linearVelocityLimit_.back_ = -constantLinearVelocityLimit_;
-
-    robotTwistPublisher_  = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
-
     joySubscriber_ = nh_.subscribe("/joy", 1, &TeleopJoystick::joyMsgCallback, this);
 
     laserScanSubscriber_ = nh_.subscribe("/scan", 1, &TeleopJoystick::publishRobotTwistCallback, this);
     
+    stopNode_ = false;
+
     ros::spin();
 
     return true;
@@ -43,26 +38,34 @@ void TeleopJoystick::publishRobotTwistCallback(const sensor_msgs::LaserScanConst
     {
         switch (axesNum_) {
         case 2:
-            angularVelocity_.velocity_ = (-1) * joy_.axes[1] * constantAngularVelocityLimit_/2;
+            angularVelocity_.velocity = (-1) * joy_.axes[1] * angularVelocityLimit_.left;
         case 1:
-            linearVelocity_.velocity_ = joy_.axes[0] * constantLinearVelocityLimit_/2;
+            linearVelocity_.velocity = joy_.axes[0] * linearVelocityLimit_.front;
             break;
         default:
-            ROS_WARN_ONCE("Unmatch numebrs of axes/buttons. Please check your joystick(s) or ROS_sharp setup.");
+            ROS_WARN_ONCE("Unmatch number of joystick axes (expected: 1-2, received: %ld).", axesNum_);
+            ROS_WARN_ONCE(" Please check your joystick(s) setup or rosbridge connection.");
             break;
         }
     }
     lock.unlock();
 
+    if (assistEnabled_) {
+        std::vector<float> lidar_distance;
+        lidar_distance.assign(lidar->ranges.begin(), lidar->ranges.end());
+        collisionAvoidance(lidar_distance);
+    }
+        
+
     if (messageEnabled_) {
-		std::cout << std::fixed << std::setprecision(2)
-			 << "Linear velocity: " << linearVelocity_.velocity_ << "\t"
-			 << "Angular velocity: " << angularVelocity_.velocity_ << "\t\t\t\r";
+		// std::cout << std::fixed << std::setprecision(2)
+		// 	 << "Linear velocity: " << linearVelocity_.velocity << "\t"
+		// 	 << "Angular velocity: " << angularVelocity_.velocity << "\t\t\t\r";
 	}
 
-    currentTwist_.linear.x  = linearVelocity_.velocity_;
-	currentTwist_.angular.z = angularVelocity_.velocity_;
-    robotTwistPublisher_.publish(currentTwist_);
+    moveBaseTwist_.linear.x  = linearVelocity_.velocity;
+	moveBaseTwist_.angular.z = angularVelocity_.velocity;
+    robotTwistPublisher_.publish(moveBaseTwist_);
 }
 
 

@@ -12,6 +12,7 @@ add_compile_options(-std=c++14)
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_filters
+  nav_msgs
   roscpp
   rospy
   sensor_msgs
@@ -55,17 +56,17 @@ include_directories(
 
 # Declare C++ library
 add_library(teleop_interface
-  src/teleoperation/teleop_interface.cpp
+  src/teleop_interface.cpp
 )
 
 # Declare C++ executables and
-# Link the library to the executables
+#  link the library to the executables
 
-add_executable(teleop_joystick src/teleoperation/teleop_joystick.cpp)
-target_link_libraries(teleop_joystick ${catkin_LIBRARIES} teleop_interface)
-
-add_executable(teleop_keyboard src/teleoperation/teleop_keyboard.cpp)
+add_executable(teleop_keyboard src/teleop_keyboard.cpp)
 target_link_libraries(teleop_keyboard ${catkin_LIBRARIES} teleop_interface)
+
+add_executable(teleop_joystick src/teleop_joystick.cpp)
+target_link_libraries(teleop_joystick ${catkin_LIBRARIES} teleop_interface)
 
 
 ################################################################################
@@ -80,8 +81,8 @@ catkin_install_python(PROGRAMS
 
 # Install C++ executables
 install(TARGETS
-    teleop_joystick
     teleop_keyboard
+    teleop_joystick
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

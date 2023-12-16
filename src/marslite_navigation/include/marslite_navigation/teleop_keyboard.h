@@ -27,8 +27,8 @@ Moving around:
     w
 a   s   d
 
-w/s : increase/decrease linear velocity, MAX: )" + std::to_string(constantLinearVelocityLimit_) + R"(
-a/d : increase/decrease angular velocity, MAX: )" + std::to_string(constantAngularVelocityLimit_) + R"(
+w/s : increase/decrease linear velocity [)" + std::to_string(linearVelocityLimit_.front) + ", " + std::to_string(linearVelocityLimit_.back) + R"(]
+a/d : increase/decrease angular velocity [)" + std::to_string(angularVelocityLimit_.left) + ", " + std::to_string(angularVelocityLimit_.right) + R"(]
 
 space key : force stop
 

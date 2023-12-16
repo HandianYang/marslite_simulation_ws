@@ -4,14 +4,9 @@ namespace marslite_navigation {
 
 bool TeleopKeyboard::run(void)
 {
-    ROS_ASSERT(parseParameters());
-	
-	linearVelocityLimit_.front_ = constantLinearVelocityLimit_;
-	linearVelocityLimit_.back_ = -constantLinearVelocityLimit_;
-
-    robotTwistPublisher_  = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
-
     laserScanSubscriber_ = nh_.subscribe("/scan", 1, &TeleopKeyboard::publishRobotTwistCallback, this);
+
+	stopNode_ = false;
 
 	ROS_INFO_STREAM(userGuideMsg_);
 	if (laserScanSubscriber_ ) {
@@ -74,23 +69,23 @@ void TeleopKeyboard::publishRobotTwistCallback(const sensor_msgs::LaserScanConst
 	switch (inputKey_) {
 	case 'w':
 	case 'W':
-		linearVelocity_.increase(linearVelocityLimit_.front_, constantLinearVelocityStep_);
+		linearVelocity_.increase(linearVelocityStep_.velocity, linearVelocityLimit_.front);
 		break;
 	case 's':
 	case 'S':
-		linearVelocity_.decrease(linearVelocityLimit_.back_,  constantLinearVelocityStep_);
+		linearVelocity_.decrease(linearVelocityStep_.velocity, linearVelocityLimit_.back);
 		break;
 	case 'a':
 	case 'A':
-		angularVelocity_.increase(constantAngularVelocityLimit_, constantAngularVelocityStep_);
+		angularVelocity_.increase(angularVelocityStep_.velocity, angularVelocityLimit_.left);
 		break;
 	case 'd':
 	case 'D':
-		angularVelocity_.decrease(-constantAngularVelocityLimit_, constantAngularVelocityStep_);
+		angularVelocity_.decrease(angularVelocityStep_.velocity, angularVelocityLimit_.right);
 		break;
 	case ' ':
-		linearVelocity_.velocity_ = 0;
-		angularVelocity_.velocity_ = 0;
+		linearVelocity_.velocity = 0;
+		angularVelocity_.velocity = 0;
 		break;
 	case 'q':
 	case 'Q':
@@ -98,21 +93,21 @@ void TeleopKeyboard::publishRobotTwistCallback(const sensor_msgs::LaserScanConst
 		break;
 	default:
 		if (autoSlowDownEnabled_) {
-			linearVelocity_.slowDown(constantLinearVelocityStep_);
-			angularVelocity_.slowDown(constantAngularVelocityStep_);
+			linearVelocity_.slowDown(linearVelocityStep_.velocity);
+			angularVelocity_.slowDown(angularVelocityStep_.velocity);
 		}
 		break;
 	}
 
 	if (messageEnabled_) {
 		std::cout << std::fixed << std::setprecision(2)
-			 << "Linear velocity: " << linearVelocity_.velocity_ << "\t"
-			 << "Angular velocity: " << angularVelocity_.velocity_ << "\t\t\t\r";
+			 << "Linear velocity: " << linearVelocity_.velocity << "\t"
+			 << "Angular velocity: " << angularVelocity_.velocity << "\t\t\t\r";
 	}
 
-	currentTwist_.linear.x  = linearVelocity_.velocity_;
-	currentTwist_.angular.z = angularVelocity_.velocity_;
-	robotTwistPublisher_.publish(currentTwist_);
+	moveBaseTwist_.linear.x  = linearVelocity_.velocity;
+	moveBaseTwist_.angular.z = angularVelocity_.velocity;
+	robotTwistPublisher_.publish(moveBaseTwist_);
 }
 
 } // namespace marslite_navigation
