@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(mars_lite_description)
 
 ## Compile as C++11, supported in ROS Kinetic and newer

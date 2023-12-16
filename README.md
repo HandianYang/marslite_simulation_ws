@@ -184,9 +184,15 @@ roslaunch mars_lite_moveit_config mars_lite_moveit_planning_execution_gz.launch
 
 ## Known issues
 
+### System-related
+
+#### Warnings
+- CMake warning: `Eigen` is deprecated
+- Build warning: `_bool OsqpEigen::Solver::solve()_` is deprecated
+
 ### Robot-related
 
-#### errors
+#### Errors
 - **"No p gain specified for pid. Namespace: /gazebo_ros_control/pid_gains/..."**
 
 #### warnings
