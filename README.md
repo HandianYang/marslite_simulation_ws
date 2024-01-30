@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Sat, Dec 16, 2023
+* Last update: Tue, Jan 30, 2024
 
 ## Prerequisites
 
@@ -171,6 +171,18 @@ roslaunch marslite_navigation teleop_keyboard.launch
 4. Directly control the robot with joystick inputs:
 ```Shell
 roslaunch marslite_navigation teleop_joystick.launch
+```
+
+### Obstacle avoidance
+
+1. Publish **"static virtual zone (SVZ)"** topic:
+```Shell
+rosrun marslite_shared_control static_virtual_zone
+```
+
+2. Publish **"deformable virtual zone (DVZ)"** topic:
+```Shell
+rosrun marslite_shared_control deformable_virtual_zone
 ```
 
 

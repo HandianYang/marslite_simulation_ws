@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>marslite_shared_control</name>
+  <version>0.0.0</version>
+  <description>
+    The package provides adaptive shared control on mobile assistive robots.
+  </description>
+  <license>Apache 2.0</license>
+  <maintainer email="ych0610765@gmail.com">Handian Yang</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>dynamic_reconfigure</build_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+
+  <build_depend>roscpp</build_depend>
+  <exec_depend>roscpp</exec_depend>
+
+  <build_depend>sensor_msgs</build_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+
+</package>
