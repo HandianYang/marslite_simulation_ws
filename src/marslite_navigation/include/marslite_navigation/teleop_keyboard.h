@@ -3,23 +3,15 @@
 
 #include "marslite_navigation/teleop_interface.h"
 
-#include <iostream>
-#include <iomanip>
-#include <termios.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/time.h>
-
 namespace marslite_navigation {
 
 class TeleopKeyboard : public TeleopInterface {
 public:
-    explicit TeleopKeyboard(void) { teleoperationType_ = TELEOP_KEYBOARD; }
-
+    explicit TeleopKeyboard(void) : stopNode_(false) {}
     bool run(void) override;
-    
-protected:
-    char inputKey_;
+
+private:
+    // display message
     const std::string userGuideMsg_ = R"(
 Control Your Robot!
 ---------------------------
@@ -27,17 +19,25 @@ Moving around:
     w
 a   s   d
 
-w/s : increase/decrease linear velocity [)" + std::to_string(linearVelocityLimit_.front) + ", " + std::to_string(linearVelocityLimit_.back) + R"(]
-a/d : increase/decrease angular velocity [)" + std::to_string(angularVelocityLimit_.left) + ", " + std::to_string(angularVelocityLimit_.right) + R"(]
+w/s : increase/decrease linear velocity [)" + std::to_string(linearVelocity_.limit.min) + ", " + std::to_string(linearVelocity_.limit.max) + R"(]
+a/d : increase/decrease angular velocity [)" + std::to_string(angularVelocity_.limit.min) + ", " + std::to_string(angularVelocity_.limit.max) + R"(]
 
 space key : force stop
 
 q to quit
 )";
 
+    // keyboard inputs
+    char inputKey_;
+
+    /**
+     * @brief Obtain keyboard inputs
+     * @return true if the keyboard input was successfully fetched
+    */
     bool getInput(void);
-    
-    void publishRobotTwistCallback(const sensor_msgs::LaserScanConstPtr& lidar);
+
+    // flags
+    bool stopNode_;
 };
 
 

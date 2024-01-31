@@ -4,6 +4,3 @@ angular_velocity_limit_left:   0.5  # unit: m/s
 angular_velocity_limit_right: -0.5  # unit: m/s
 linear_velocity_step: 0.01          # unit: m/s
 angular_velocity_step: 0.05         # unit: m/s
-time_decel_bound: 5.0               # unit: s
-time_stop_bound:  1.0               # unit: s
-scan_range: 40                      # unit: degree

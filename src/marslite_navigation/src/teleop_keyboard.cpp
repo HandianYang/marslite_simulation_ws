@@ -1,21 +1,75 @@
 #include "marslite_navigation/teleop_keyboard.h"
 
+#include <iostream>
+#include <iomanip>
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/time.h>
+
 namespace marslite_navigation {
 
 bool TeleopKeyboard::run(void)
 {
-    laserScanSubscriber_ = nh_.subscribe("/scan", 1, &TeleopKeyboard::publishRobotTwistCallback, this);
-
-	stopNode_ = false;
-
+	// Print out the guiding message
 	ROS_INFO_STREAM(userGuideMsg_);
-	if (laserScanSubscriber_ ) {
-		while (ros::ok() && !stopNode_) {
-			ROS_ASSERT(getInput());
-			
-			ros::Rate(60).sleep();
-			ros::spinOnce();
+	
+	while (ros::ok() && !stopNode_) {
+		// Obtain keyboard inputs
+		ROS_ASSERT(getInput());
+
+		switch (inputKey_) {
+		case 'w':
+		case 'W':
+			// Move forward
+			linearVelocity_ += linearVelocityStep_;
+			break;
+		case 's':
+		case 'S':
+			// Move backward
+			linearVelocity_ -= linearVelocityStep_;
+			break;
+		case 'a':
+		case 'A':
+			// Turn left
+			angularVelocity_ += angularVelocityStep_;
+			break;
+		case 'd':
+		case 'D':
+			// Turn right
+			angularVelocity_ -= angularVelocityStep_;
+			break;
+		case ' ':
+			linearVelocity_.velocity = 0;
+			angularVelocity_.velocity = 0;
+			break;
+		case 'q':
+		case 'Q':
+			stopNode_ = true;
+			break;
+		default:
+			if (autoSlowDownEnabled_) {
+				linearVelocity_.slowDown(linearVelocityStep_);
+				angularVelocity_.slowDown(angularVelocityStep_);
+			}
+			break;
 		}
+
+		// Print out the message (if enabled)
+		if (messageEnabled_) {
+			std::cout << std::fixed << std::setprecision(2)
+				<< "Linear velocity: " << linearVelocity_.velocity << "\t"
+				<< "Angular velocity: " << angularVelocity_.velocity << "\t\t\t\r";
+		}
+
+		// Publish the twist message to `/cmd_vel` topic
+		robotTwist_.linear.x  = linearVelocity_.velocity;    robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
+		robotTwist_.angular.z = angularVelocity_.velocity;   robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
+		robotTwistPublisher_.publish(robotTwist_);
+		
+		// Delay
+		publishRate_.sleep();
+		ros::spinOnce();
 	}
 
     return true;
@@ -62,61 +116,14 @@ bool TeleopKeyboard::getInput(void)
 	return true;
 }
 
-
-
-void TeleopKeyboard::publishRobotTwistCallback(const sensor_msgs::LaserScanConstPtr& lidar)
-{
-	switch (inputKey_) {
-	case 'w':
-	case 'W':
-		linearVelocity_.increase(linearVelocityStep_.velocity, linearVelocityLimit_.front);
-		break;
-	case 's':
-	case 'S':
-		linearVelocity_.decrease(linearVelocityStep_.velocity, linearVelocityLimit_.back);
-		break;
-	case 'a':
-	case 'A':
-		angularVelocity_.increase(angularVelocityStep_.velocity, angularVelocityLimit_.left);
-		break;
-	case 'd':
-	case 'D':
-		angularVelocity_.decrease(angularVelocityStep_.velocity, angularVelocityLimit_.right);
-		break;
-	case ' ':
-		linearVelocity_.velocity = 0;
-		angularVelocity_.velocity = 0;
-		break;
-	case 'q':
-	case 'Q':
-		stopNode_ = true;
-		break;
-	default:
-		if (autoSlowDownEnabled_) {
-			linearVelocity_.slowDown(linearVelocityStep_.velocity);
-			angularVelocity_.slowDown(angularVelocityStep_.velocity);
-		}
-		break;
-	}
-
-	if (messageEnabled_) {
-		std::cout << std::fixed << std::setprecision(2)
-			 << "Linear velocity: " << linearVelocity_.velocity << "\t"
-			 << "Angular velocity: " << angularVelocity_.velocity << "\t\t\t\r";
-	}
-
-	moveBaseTwist_.linear.x  = linearVelocity_.velocity;
-	moveBaseTwist_.angular.z = angularVelocity_.velocity;
-	robotTwistPublisher_.publish(moveBaseTwist_);
-}
-
 } // namespace marslite_navigation
+
 
 
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "teleop_keyboard");
-	marslite_navigation::TeleopInterfacePtr keyboardHandler
+	std::shared_ptr<marslite_navigation::TeleopKeyboard> keyboardHandler
 		 = std::make_shared<marslite_navigation::TeleopKeyboard>();
 	
 	ROS_ASSERT(keyboardHandler->run());

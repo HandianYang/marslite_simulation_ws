@@ -10,13 +10,14 @@ namespace marslite_navigation {
 
 class TeleopJoystick : public TeleopInterface {
 public:
-    explicit TeleopJoystick(void) { teleoperationType_ = TELEOP_JOYSTICK; }
-
+    explicit TeleopJoystick(void) {}
     bool run(void) override;
 
-protected:
+private:
+    // ROS-related
     ros::Subscriber joySubscriber_;
 
+    // joy messages
     size_t axesNum_;
     size_t buttonsNum_;
     sensor_msgs::Joy joy_;
@@ -24,8 +25,8 @@ protected:
     // mutex
     std::mutex joyMutex_;
     
-    void joyMsgCallback(const sensor_msgs::JoyConstPtr& joy);
-    void publishRobotTwistCallback(const sensor_msgs::LaserScanConstPtr& lidar);
+    // callbacks
+    void joyCB(const sensor_msgs::JoyConstPtr& joyPtr);
 };
 
 } // namespace marslite_navigation
