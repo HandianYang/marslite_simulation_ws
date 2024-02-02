@@ -11,6 +11,7 @@ add_compile_options(-std=c++14)
 ################################################################################
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
+  geometry_msgs
   roscpp
   sensor_msgs
 )
@@ -37,6 +38,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
   CATKIN_DEPENDS
     dynamic_reconfigure
+    geometry_msgs
     roscpp
     sensor_msgs
   INCLUDE_DIRS include
@@ -48,22 +50,22 @@ catkin_package(
 
 include_directories(
   include
+  ../marslite_navigation/include
   ${catkin_INCLUDE_DIRS}
 )
 
 ### Declare C++ library
 add_library(virtual_zone
   src/virtual_zone.cpp
+  src/static_virtual_zone.cpp
+  src/deformable_virtual_zone.cpp
 )
 add_dependencies(virtual_zone  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(virtual_zone  ${catkin_LIBRARIES})
 
 ### Declare C++ executables and link the library to the executables
-add_executable(static_virtual_zone src/static_virtual_zone.cpp)
-target_link_libraries(static_virtual_zone ${catkin_LIBRARIES} virtual_zone)
-
-add_executable(deformable_virtual_zone src/deformable_virtual_zone.cpp)
-target_link_libraries(deformable_virtual_zone ${catkin_LIBRARIES} virtual_zone)
+add_executable(adaptive_controller src/adaptive_controller.cpp)
+target_link_libraries(adaptive_controller ${catkin_LIBRARIES} virtual_zone)
 
 
 ################################################################################
@@ -84,8 +86,7 @@ install(TARGETS
 
 # Install C++ libraries
 install(TARGETS
-    static_virtual_zone
-    deformable_virtual_zone
+    adaptive_controller
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
