@@ -1,5 +1,5 @@
 #include "marslite_shared_control/static_virtual_zone.h"
-#include "marslite_shared_control/properties.h"
+#include "marslite_properties/Properties.h"
 
 #include <math.h>
 

@@ -1,5 +1,5 @@
 #include "marslite_shared_control/virtual_zone.h"
-#include "marslite_shared_control/properties.h"
+#include "marslite_properties/Properties.h"
 
 namespace marslite_shared_control {
 

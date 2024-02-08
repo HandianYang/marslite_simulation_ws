@@ -4,8 +4,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 
-#include "marslite_navigation/move_base.h"
-
+#include "marslite_properties/Properties.h"
 
 namespace marslite_navigation {
 
@@ -22,8 +21,8 @@ protected:
     ros::Rate publishRate_;
 
     // parsed parameters (yaml)
-    move_base::Velocity linearVelocity_;
-    move_base::Velocity angularVelocity_;
+    marslite::move_base::Velocity linearVelocity_;
+    marslite::move_base::Velocity angularVelocity_;
     float linearVelocityStep_;
     float angularVelocityStep_;
 
@@ -33,7 +32,7 @@ protected:
 
     // robot messages
     geometry_msgs::Twist robotTwist_;
-    move_base::Pose robotPose_;
+    marslite::move_base::Pose robotPose_;
 
 protected:
     /**

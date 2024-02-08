@@ -16,7 +16,6 @@ bool TeleopInterface::parseParameters(void)
     ros::NodeHandle pNh("~");
 
     /***** Parsed parameters (yaml) *****/
-    
     // (maximum) linear velocity limits
     linearVelocity_.limit.max = pNh.param<float>("linear_velocity_limit_front", 0.7);
     linearVelocity_.limit.min = pNh.param<float>("linear_velocity_limit_back", -0.5);
@@ -30,7 +29,10 @@ bool TeleopInterface::parseParameters(void)
     angularVelocityStep_ = pNh.param<float>("angular_velocity_step", 0.05);
 
     /***** Parsed parameters (launch) *****/
+    // Determine whether the node should print out the message
     messageEnabled_ = pNh.param<bool>("message_enabled", true);
+
+    // Determine whether the robot should gradually slow down if there's no user inputs currently
     autoSlowDownEnabled_ = pNh.param<bool>("auto_slow_down_enabled", true);
 
     return true;

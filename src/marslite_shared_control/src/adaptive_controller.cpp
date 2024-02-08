@@ -6,9 +6,14 @@ namespace marslite_shared_control {
 
 AdaptiveController::AdaptiveController(const ros::NodeHandle& nh) : nh_(nh)
 {
+    server_ = new dynamic_reconfigure::Server<AdaptiveControllerConfig>(ros::NodeHandle("~/marslite_shared_control/AdaptiveController"));
+    f_ = boost::bind(&AdaptiveController::reconfigureCB, this, _1, _2);
+    server_->setCallback(f_);
+
     SVZPtr_ = std::make_shared<marslite_shared_control::StaticVirtualZone>(nh_);
     DVZPtr_ = std::make_shared<marslite_shared_control::DeformableVirtualZone>(nh_);
     amclPoseSubscriber_ = nh_.subscribe("/amcl_pose", 1, &AdaptiveController::amclPoseCB, this);
+    controllerPublisher_ = nh_.advertise<geometry_msgs::Twist>("/marslite_shared_control/controller", 1);
 }
 
 void AdaptiveController::calculateIntrusionRatio()
@@ -16,7 +21,7 @@ void AdaptiveController::calculateIntrusionRatio()
     const sensor_msgs::LaserScan& SVZ_fields = SVZPtr_->getFieldsData();
     const sensor_msgs::LaserScan& DVZ_fields = DVZPtr_->getFieldsData();
 
-    size_t fieldSize = SVZ_fields.ranges.size();
+    const uint16_t fieldSize = SVZ_fields.ranges.size();
     std::vector<float> IRfunc(fieldSize);   // Intrusion Ratio (IR) function
 
     for (uint i = 0; i < fieldSize; ++i) {
@@ -38,28 +43,61 @@ void AdaptiveController::calculateAverageAngle()
     const sensor_msgs::LaserScan& SVZ_fields = SVZPtr_->getFieldsData();
     const sensor_msgs::LaserScan& DVZ_fields = DVZPtr_->getFieldsData();
 
-    size_t fieldSize = SVZ_fields.ranges.size();
-    std::vector<float> AANumFunc(fieldSize);    // Average Obstacle Angle (AA) function (numerator part)
-    std::vector<float> AADenFunc(fieldSize);    // Average Obstacle Angle (AA) function (denominator part)
+    const size_t fieldSize = SVZ_fields.ranges.size();
+    std::vector<float> AOANumFunc(fieldSize);    // Average Obstacle Angle (AOA) function (numerator part)
+    std::vector<float> AOADenFunc(fieldSize);    // Average Obstacle Angle (AOA) function (denominator part)
     
     for (uint i = 0; i < fieldSize; ++i) {
-        AADenFunc[i] = SVZ_fields.ranges[i] - DVZ_fields.ranges[i];
-        AANumFunc[i] = AADenFunc[i] * marslite::THETA[i];
+        AOADenFunc[i] = SVZ_fields.ranges[i] - DVZ_fields.ranges[i];
+        AOANumFunc[i] = AOADenFunc[i] * marslite::THETA[i];
     }
 
     // Calculate the definite integral
-    float AANum = 0, AADen = 0;     // definite integral on `AANumFunc` and `AADenFunc`
+    float AOANum = 0, AOADen = 0;     // definite integral on `AOANumFunc` and `AOADenFunc`
     for (uint i = 1; i < fieldSize; ++i) {
-        AANum += (AANumFunc[i] - AANumFunc[i-1]) / SVZ_fields.angle_increment;
-        AADen += (AADenFunc[i] - AADenFunc[i-1]) / SVZ_fields.angle_increment;
+        AOANum += (AOANumFunc[i] - AOANumFunc[i-1]) / SVZ_fields.angle_increment;
+        AOADen += (AOADenFunc[i] - AOADenFunc[i-1]) / SVZ_fields.angle_increment;
     }
 
-    if (abs(AADen) < 1e-03)
-        averageObstableAngle_ = -robotPose_.theta;      // the opposite direction of the robot
-    else
-        averageObstableAngle_ = (AANum / AADen + robotPose_.theta);
+    float newAOA = averageObstableAngle_;
+    if (abs(AOADen) >= 1e-03) {
+        newAOA = AOANum / AOADen + robotPose_.theta;
+
+        // Fix the angle in range [-pi, pi]
+        while (averageObstableAngle_ > M_PI)   averageObstableAngle_ -= 2*M_PI;
+        while (averageObstableAngle_ < -M_PI)  averageObstableAngle_ += 2*M_PI;
+    }
+        
+    averageObstableAngleDiff_ = newAOA - averageObstableAngle_;
 }
 
+void AdaptiveController::calculateController()
+{
+    const sensor_msgs::LaserScan& SVZ_fields = SVZPtr_->getFieldsData();
+    const sensor_msgs::LaserScan& DVZ_fields = DVZPtr_->getFieldsData();
+
+    std::vector<float> JxFunc(marslite::LASER_SIZE), JyFunc(marslite::LASER_SIZE);
+    for (uint16_t i = 0; i < marslite::LASER_SIZE; ++i) {
+        JxFunc[i] = (DVZ_fields.ranges[i] * cos(marslite::THETA[i]+robotPose_.theta)) / (SVZ_fields.ranges[i] * DVZ_fields.ranges[i]);
+        JyFunc[i] = (DVZ_fields.ranges[i] * sin(marslite::THETA[i]+robotPose_.theta)) / (SVZ_fields.ranges[i] * DVZ_fields.ranges[i]);
+    }
+
+    float Jx = 0, Jy = 0;
+    for (uint16_t i = 1; i < marslite::LASER_SIZE; ++i) {
+        Jx += (JxFunc[i] - JxFunc[i-1]) / SVZ_fields.angle_increment;
+        Jy += (JyFunc[i] - JyFunc[i-1]) / SVZ_fields.angle_increment;
+    }
+
+    linearController_.velocity = -kx_*Jx*cos(robotPose_.theta)-ky_*Jy*sin(robotPose_.theta);
+    angularController_.velocity = -kw_*(robotPose_.theta+averageObstableAngle_) + averageObstableAngleDiff_;
+}
+
+void AdaptiveController::reconfigureCB(marslite_shared_control::AdaptiveControllerConfig& config, uint32_t level)
+{
+    kx_ = config.kx;
+    ky_ = config.ky;
+    kw_ = config.kw;
+}
 
 void AdaptiveController::amclPoseCB(const geometry_msgs::PoseWithCovarianceStampedConstPtr& amclPosePtr)
 {

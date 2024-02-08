@@ -17,7 +17,7 @@ protected:
 
 private:
     // dynamic reconfigure
-    void reconfigureCB(marslite_shared_control::VirtualZoneConfig &config, uint32_t level);
+    void reconfigureCB(marslite_shared_control::VirtualZoneConfig& config, uint32_t level);
     dynamic_reconfigure::Server<marslite_shared_control::VirtualZoneConfig>* server_;
     dynamic_reconfigure::Server<marslite_shared_control::VirtualZoneConfig>::CallbackType f_;
 

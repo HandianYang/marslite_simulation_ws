@@ -1,5 +1,6 @@
 #include "marslite_shared_control/deformable_virtual_zone.h"
-#include "marslite_shared_control/properties.h"
+#include "marslite_properties/Properties.h"
+
 #include <math.h>
 
 namespace marslite_shared_control {

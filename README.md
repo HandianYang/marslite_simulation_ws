@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Fri, Feb 2, 2024
+* Last update: Thu, Feb 8, 2024
 
 ## Prerequisites
 
@@ -173,7 +173,7 @@ roslaunch marslite_navigation teleop_keyboard.launch
 roslaunch marslite_navigation teleop_joystick.launch
 ```
 
-### Obstacle avoidance
+<!-- ### Obstacle avoidance
 
 1. Publish **"static virtual zone (SVZ)"** topic:
 ```Shell
@@ -183,7 +183,7 @@ rosrun marslite_shared_control static_virtual_zone
 2. Publish **"deformable virtual zone (DVZ)"** topic:
 ```Shell
 rosrun marslite_shared_control deformable_virtual_zone
-```
+``` -->
 
 
 ### Robotic arm control

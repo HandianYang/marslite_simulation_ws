@@ -1,7 +1,16 @@
-#ifndef MOVE_BASE_H_
-#define MOVE_BASE_H_
+#ifndef PROPERTIES_H_
+#define PROPERTIES_H_
 
-namespace marslite_navigation {
+#include <vector>
+#include "marslite_properties/Arithmetics.h"
+
+namespace marslite {
+
+// size of the laser and the virtual zones
+const static size_t LASER_SIZE = 1440;
+
+// vector of the angle within [-pi, pi]
+const static std::vector<float> THETA = marslite::math::linspace<float>(-M_PI, M_PI, LASER_SIZE);
 
 namespace move_base {
 
@@ -28,8 +37,11 @@ struct Velocity {
     } limit;
     
     /* Member functions */
-    
-    Velocity() {}
+    Velocity(const float& velocity = 0.0, const float& max = 1.0, const float& min = -1.0) {
+        this->velocity = velocity;
+        this->limit.max = max;
+        this->limit.min = min;
+    }
 
     /**
      * @brief Increase the velocity of the robot
@@ -85,11 +97,8 @@ struct Velocity {
     }
 };
 
-
 } // namespace move_base
 
-} // namespace marslite_navigation
+} // namespace marslite
 
-
-
-#endif // #define MOVE_BASE_H_
+#endif // #define PROPERTIES_H_

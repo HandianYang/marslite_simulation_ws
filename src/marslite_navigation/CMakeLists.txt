@@ -51,6 +51,7 @@ catkin_package(
 
 include_directories(
   include
+  ../marslite_properties/include
   ${catkin_INCLUDE_DIRS}
 )
 

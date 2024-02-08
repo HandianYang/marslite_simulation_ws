@@ -30,6 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 generate_dynamic_reconfigure_options(
   cfg/VirtualZone.cfg
+  cfg/AdaptiveController.cfg
 )
 
 ################################################################################
@@ -50,7 +51,7 @@ catkin_package(
 
 include_directories(
   include
-  ../marslite_navigation/include
+  ../marslite_properties/include
   ${catkin_INCLUDE_DIRS}
 )
 
