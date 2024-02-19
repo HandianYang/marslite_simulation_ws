@@ -16,77 +16,46 @@ AdaptiveController::AdaptiveController(const ros::NodeHandle& nh) : nh_(nh)
     controllerPublisher_ = nh_.advertise<geometry_msgs::Twist>("/marslite_shared_control/controller", 1);
 }
 
-void AdaptiveController::calculateIntrusionRatio()
-{
-    const sensor_msgs::LaserScan& SVZ_fields = SVZPtr_->getFieldsData();
-    const sensor_msgs::LaserScan& DVZ_fields = DVZPtr_->getFieldsData();
-
-    const uint16_t fieldSize = SVZ_fields.ranges.size();
-    std::vector<float> IRfunc(fieldSize);   // Intrusion Ratio (IR) function
-
-    for (uint i = 0; i < fieldSize; ++i) {
-        if (abs(SVZ_fields.ranges[i]) < 1e-03)
-            IRfunc[i] = 0;
-        else
-            IRfunc[i] = (SVZ_fields.ranges[i] - DVZ_fields.ranges[i]) / SVZ_fields.ranges[i];
-    }
-
-    // Calculate the definite integral
-    intrusionRatio_ = 0;
-    for (uint i = 1; i < fieldSize; ++i) {
-        intrusionRatio_ += (IRfunc[i] - IRfunc[i-1]) / SVZ_fields.angle_increment;
-    }
-}
-
-void AdaptiveController::calculateAverageAngle()
-{
-    const sensor_msgs::LaserScan& SVZ_fields = SVZPtr_->getFieldsData();
-    const sensor_msgs::LaserScan& DVZ_fields = DVZPtr_->getFieldsData();
-
-    const size_t fieldSize = SVZ_fields.ranges.size();
-    std::vector<float> AOANumFunc(fieldSize);    // Average Obstacle Angle (AOA) function (numerator part)
-    std::vector<float> AOADenFunc(fieldSize);    // Average Obstacle Angle (AOA) function (denominator part)
-    
-    for (uint i = 0; i < fieldSize; ++i) {
-        AOADenFunc[i] = SVZ_fields.ranges[i] - DVZ_fields.ranges[i];
-        AOANumFunc[i] = AOADenFunc[i] * marslite::THETA[i];
-    }
-
-    // Calculate the definite integral
-    float AOANum = 0, AOADen = 0;     // definite integral on `AOANumFunc` and `AOADenFunc`
-    for (uint i = 1; i < fieldSize; ++i) {
-        AOANum += (AOANumFunc[i] - AOANumFunc[i-1]) / SVZ_fields.angle_increment;
-        AOADen += (AOADenFunc[i] - AOADenFunc[i-1]) / SVZ_fields.angle_increment;
-    }
-
-    float newAOA = averageObstableAngle_;
-    if (abs(AOADen) >= 1e-03) {
-        newAOA = AOANum / AOADen + robotPose_.theta;
-
-        // Fix the angle in range [-pi, pi]
-        while (averageObstableAngle_ > M_PI)   averageObstableAngle_ -= 2*M_PI;
-        while (averageObstableAngle_ < -M_PI)  averageObstableAngle_ += 2*M_PI;
-    }
-        
-    averageObstableAngleDiff_ = newAOA - averageObstableAngle_;
-}
-
 void AdaptiveController::calculateController()
 {
     const sensor_msgs::LaserScan& SVZ_fields = SVZPtr_->getFieldsData();
     const sensor_msgs::LaserScan& DVZ_fields = DVZPtr_->getFieldsData();
 
-    std::vector<float> JxFunc(marslite::LASER_SIZE), JyFunc(marslite::LASER_SIZE);
+    if (SVZ_fields.ranges.size() != marslite::LASER_SIZE || DVZ_fields.ranges.size() != marslite::LASER_SIZE)   return;
+
+    /* Step 1. Calculate the intrusion ratio */
+    std::vector<float> IRfunc(marslite::LASER_SIZE);   // Intrusion Ratio (IR) function
+
+    for (uint16_t i = 0; i < marslite::LASER_SIZE; ++i) {
+        if (marslite::math::reachZero<float>(SVZ_fields.ranges[i]))
+            IRfunc[i] = 0;
+        else
+            IRfunc[i] = (SVZ_fields.ranges[i] - DVZ_fields.ranges[i]) / SVZ_fields.ranges[i];
+    }
+    intrusionRatio_ = marslite::math::integral(marslite::THETA, IRfunc);
+
+    /* Step 2. Calculate the average obstacle angle */
+    std::vector<float> AOANumFunc(marslite::LASER_SIZE);    // Average Obstacle Angle (AOA) function (numerator part)
+    std::vector<float> AOADenFunc(marslite::LASER_SIZE);    // Average Obstacle Angle (AOA) function (denominator part)
+    for (uint16_t i = 0; i < marslite::LASER_SIZE; ++i) {
+        AOADenFunc[i] = SVZ_fields.ranges[i] - DVZ_fields.ranges[i];
+        AOANumFunc[i] = AOADenFunc[i] * marslite::THETA[i];
+    }
+    const float AOADen = marslite::math::integral<float>(marslite::THETA, AOADenFunc);
+    const float AOANum = marslite::math::integral<float>(marslite::THETA, AOANumFunc);
+    if (!marslite::math::reachZero(AOADen)) {
+        averageObstableAngle_ = AOANum / AOADen + robotPose_.theta;
+    }
+
+    /* Step 3. Calculate the translational and rotational velocity controllers */
+    std::vector<float> JxFunc(marslite::LASER_SIZE);        // Jx function
+    std::vector<float> JyFunc(marslite::LASER_SIZE);        // Jy function
     for (uint16_t i = 0; i < marslite::LASER_SIZE; ++i) {
         JxFunc[i] = (DVZ_fields.ranges[i] * cos(marslite::THETA[i]+robotPose_.theta)) / (SVZ_fields.ranges[i] * DVZ_fields.ranges[i]);
         JyFunc[i] = (DVZ_fields.ranges[i] * sin(marslite::THETA[i]+robotPose_.theta)) / (SVZ_fields.ranges[i] * DVZ_fields.ranges[i]);
     }
-
-    float Jx = 0, Jy = 0;
-    for (uint16_t i = 1; i < marslite::LASER_SIZE; ++i) {
-        Jx += (JxFunc[i] - JxFunc[i-1]) / SVZ_fields.angle_increment;
-        Jy += (JyFunc[i] - JyFunc[i-1]) / SVZ_fields.angle_increment;
-    }
+    const float Jx = marslite::math::integral<float>(marslite::THETA, JxFunc);
+    const float Jy = marslite::math::integral<float>(marslite::THETA, JyFunc);
 
     linearController_.velocity = -kx_*Jx*cos(robotPose_.theta)-ky_*Jy*sin(robotPose_.theta);
     angularController_.velocity = -kw_*(robotPose_.theta+averageObstableAngle_) + averageObstableAngleDiff_;
@@ -130,8 +99,9 @@ int main(int argc, char** argv)
          = std::make_shared<marslite_shared_control::AdaptiveController>();
 
     while (ros::ok()) {
-        controllerPtr->calculateIntrusionRatio();
-        controllerPtr->calculateAverageAngle();
+        // controllerPtr->calculateIntrusionRatio();
+        // controllerPtr->calculateAverageAngle();
+        controllerPtr->calculateController();
         std::cout << std::fixed << std::setprecision(2)
                 << "Intrusion ratio: " << controllerPtr->getIntrusionRatio() << "\t"
                 << "Average angle: "   << controllerPtr->getAverageAngle()   << "\t\t\t\r";
