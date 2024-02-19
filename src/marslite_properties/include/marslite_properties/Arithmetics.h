@@ -21,7 +21,7 @@ namespace math {
  * @return the vector (in `std::vector<float>` type)
 */
 template <class dataT>
-static std::vector<dataT> linspace(const dataT& begin, const dataT& end, const unsigned int& dataNum)
+static std::vector<dataT> linspace(const dataT& begin, const dataT& end, const size_t& dataNum)
 {
     if (dataNum < 2)
         throw DataNumberLessThan2Exception(dataNum);
@@ -30,7 +30,7 @@ static std::vector<dataT> linspace(const dataT& begin, const dataT& end, const u
     ret[0] = begin;
 
     const dataT space = (end - begin) / (dataNum - 1);
-    for (unsigned int i = 1; i < dataNum; ++i)
+    for (size_t i = 1; i < dataNum; ++i)
         ret[i] = ret[i-1] + space;
 
     return ret;
@@ -52,11 +52,16 @@ static dataT integral(const std::vector<dataT>& x, const std::vector<dataT>& fun
     
     dataT result = 0;
     const dataT space = x[1] - x[0];
-    const unsigned int dataNum = x.size();
-    for (unsigned int i = 1; i < dataNum; ++i)
+    const size_t dataNum = x.size();
+    for (size_t i = 1; i < dataNum; ++i)
         result += (func[i] - func[i-1]) / space;
 
     return result;
+}
+
+template <class dataT>
+static inline bool reachZero(const dataT& num) {
+    return (num >= -1e-06) && (num <= 1e-06);
 }
 
 } // namespace math

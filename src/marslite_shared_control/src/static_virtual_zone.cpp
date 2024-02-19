@@ -18,7 +18,7 @@ void StaticVirtualZone::calculateFields(const sensor_msgs::LaserScanConstPtr& la
 {
     ax_ = ka_ * robotTwist_.linear.x;
     by_ = kb_ * robotTwist_.linear.x;
-    for (uint i = 0; i < marslite::LASER_SIZE; ++i)
+    for (uint16_t i = 0; i < marslite::LASER_SIZE; ++i)
         fields_.ranges[i] = (float) pow((pow(ax_*cos(marslite::THETA[i]), 2) + pow(by_*sin(marslite::THETA[i]), 2)), 0.5);
 }
 
