@@ -20,15 +20,10 @@ namespace marslite_shared_control {
 class AdaptiveController {
 public:;
     explicit AdaptiveController(const ros::NodeHandle& nh = ros::NodeHandle());
-    void calculateIntrusionRatio();
-    void calculateAverageAngle();
     void calculateController();
 
     inline float getIntrusionRatio(void) const { return this->intrusionRatio_; }
     inline float getAverageAngle(void) const { return this->averageObstableAngle_; } 
-
-    inline sensor_msgs::LaserScan getSVZFields(void) const { return this->SVZPtr_->getFieldsData(); }
-    inline sensor_msgs::LaserScan getDVZFields(void) const { return this->DVZPtr_->getFieldsData(); }
 
 private:
     // ROS related
