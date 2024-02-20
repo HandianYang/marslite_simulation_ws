@@ -27,7 +27,7 @@ void AdaptiveController::calculateController()
     std::vector<float> IRfunc(marslite::LASER_SIZE);   // Intrusion Ratio (IR) function
 
     for (uint16_t i = 0; i < marslite::LASER_SIZE; ++i) {
-        if (marslite::math::reachZero<float>(SVZ_fields.ranges[i]))
+        if (marslite::math::reachZero(SVZ_fields.ranges[i]))
             IRfunc[i] = 0;
         else
             IRfunc[i] = (SVZ_fields.ranges[i] - DVZ_fields.ranges[i]) / SVZ_fields.ranges[i];
@@ -41,21 +41,33 @@ void AdaptiveController::calculateController()
         AOADenFunc[i] = SVZ_fields.ranges[i] - DVZ_fields.ranges[i];
         AOANumFunc[i] = AOADenFunc[i] * marslite::THETA[i];
     }
-    const float AOADen = marslite::math::integral<float>(marslite::THETA, AOADenFunc);
-    const float AOANum = marslite::math::integral<float>(marslite::THETA, AOANumFunc);
+    const float AOADen = marslite::math::integral(marslite::THETA, AOADenFunc);
+    const float AOANum = marslite::math::integral(marslite::THETA, AOANumFunc);
+
+    const float currentAOA = averageObstableAngle_;
     if (!marslite::math::reachZero(AOADen)) {
         averageObstableAngle_ = AOANum / AOADen + robotPose_.theta;
+        while (averageObstableAngle_ >= M_PI)   averageObstableAngle_ -= 2*M_PI;
+        while (averageObstableAngle_ <= -M_PI)  averageObstableAngle_ += 2*M_PI;
     }
+    averageObstableAngleDiff_ = averageObstableAngle_ - currentAOA;
+    if (averageObstableAngleDiff_ >= 1.8*M_PI)  averageObstableAngleDiff_ = 2*M_PI - averageObstableAngleDiff_;
+    if (averageObstableAngleDiff_ <= -1.8*M_PI) averageObstableAngleDiff_ = 2*M_PI + averageObstableAngleDiff_;
 
     /* Step 3. Calculate the translational and rotational velocity controllers */
     std::vector<float> JxFunc(marslite::LASER_SIZE);        // Jx function
     std::vector<float> JyFunc(marslite::LASER_SIZE);        // Jy function
     for (uint16_t i = 0; i < marslite::LASER_SIZE; ++i) {
-        JxFunc[i] = (DVZ_fields.ranges[i] * cos(marslite::THETA[i]+robotPose_.theta)) / (SVZ_fields.ranges[i] * DVZ_fields.ranges[i]);
-        JyFunc[i] = (DVZ_fields.ranges[i] * sin(marslite::THETA[i]+robotPose_.theta)) / (SVZ_fields.ranges[i] * DVZ_fields.ranges[i]);
+        if (marslite::math::reachZero(SVZ_fields.ranges[i]) || marslite::math::reachZero(DVZ_fields.ranges[i])) {
+            JxFunc[i] = 0;
+            JyFunc[i] = 0;
+        } else {
+            JxFunc[i] = cos(marslite::THETA[i]+robotPose_.theta) / SVZ_fields.ranges[i];
+            JyFunc[i] = sin(marslite::THETA[i]+robotPose_.theta) / SVZ_fields.ranges[i];
+        }
     }
-    const float Jx = marslite::math::integral<float>(marslite::THETA, JxFunc);
-    const float Jy = marslite::math::integral<float>(marslite::THETA, JyFunc);
+    const float Jx = marslite::math::integral(marslite::THETA, JxFunc);
+    const float Jy = marslite::math::integral(marslite::THETA, JyFunc);
 
     linearController_.velocity = -kx_*Jx*cos(robotPose_.theta)-ky_*Jy*sin(robotPose_.theta);
     angularController_.velocity = -kw_*(robotPose_.theta+averageObstableAngle_) + averageObstableAngleDiff_;
