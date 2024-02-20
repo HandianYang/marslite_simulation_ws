@@ -1,9 +1,11 @@
 #ifndef _TELEOP_KEYBOARD_H_
 #define _TELEOP_KEYBOARD_H_
 
-#include "marslite_navigation/teleop_interface.h"
+#include "marslite_navigation/teleoperation/teleop_interface.h"
 
 namespace marslite_navigation {
+
+namespace teleoperation {
 
 class TeleopKeyboard : public TeleopInterface {
 public:
@@ -40,7 +42,10 @@ q to quit
     bool stopNode_;
 };
 
+} // namespace teleoperation
 
 } // namespace marslite_navigation
+
+
 
 #endif // _TELEOP_KEYBOARD_H_

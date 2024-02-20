@@ -8,14 +8,16 @@
 #include <geometry_msgs/Twist.h>
 
 #include <dynamic_reconfigure/server.h>
-#include "marslite_shared_control/AdaptiveControllerConfig.h"
+#include "marslite_navigation/AdaptiveControllerConfig.h"
 
 #include "marslite_properties/Properties.h"
-#include "marslite_shared_control/static_virtual_zone.h"
-#include "marslite_shared_control/deformable_virtual_zone.h"
+#include "marslite_navigation/shared_control/static_virtual_zone.h"
+#include "marslite_navigation/shared_control/deformable_virtual_zone.h"
 
 
-namespace marslite_shared_control {
+namespace marslite_navigation {
+
+namespace shared_control {
 
 class AdaptiveController {
 public:;
@@ -40,8 +42,8 @@ private:
     marslite::move_base::Velocity linearController_;
     marslite::move_base::Velocity angularController_;
 
-    std::shared_ptr<marslite_shared_control::StaticVirtualZone> SVZPtr_;
-    std::shared_ptr<marslite_shared_control::DeformableVirtualZone> DVZPtr_;
+    std::shared_ptr<StaticVirtualZone> SVZPtr_;
+    std::shared_ptr<DeformableVirtualZone> DVZPtr_;
 
     // AMCL pose
     void amclPoseCB(const geometry_msgs::PoseWithCovarianceStampedConstPtr& amclPosePtr);
@@ -49,11 +51,13 @@ private:
     std::mutex amclPoseMutex_;
 
     // dynamic reconfigure
-    void reconfigureCB(marslite_shared_control::AdaptiveControllerConfig& config, uint32_t level);
-    dynamic_reconfigure::Server<marslite_shared_control::AdaptiveControllerConfig>* server_;
-    dynamic_reconfigure::Server<marslite_shared_control::AdaptiveControllerConfig>::CallbackType f_;
+    void reconfigureCB(marslite_navigation::AdaptiveControllerConfig& config, uint32_t level);
+    dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>* server_;
+    dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>::CallbackType f_;
 };
 
-} // namespace marslite_shared_control
+} // namespace shared_control
+
+} // namespace marslite_navigation
 
 #endif  // #define APATIVE_CONTROLLER_H_

@@ -1,4 +1,4 @@
-#include "marslite_navigation/teleop_keyboard.h"
+#include "marslite_navigation/teleoperation/teleop_keyboard.h"
 
 #include <iostream>
 #include <iomanip>
@@ -8,6 +8,8 @@
 #include <sys/time.h>
 
 namespace marslite_navigation {
+
+namespace teleoperation {
 
 bool TeleopKeyboard::run(void)
 {
@@ -116,6 +118,8 @@ bool TeleopKeyboard::getInput(void)
 	return true;
 }
 
+} // namespace teleoperation
+
 } // namespace marslite_navigation
 
 
@@ -123,8 +127,8 @@ bool TeleopKeyboard::getInput(void)
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "teleop_keyboard");
-	std::shared_ptr<marslite_navigation::TeleopKeyboard> keyboardHandler
-		 = std::make_shared<marslite_navigation::TeleopKeyboard>();
+	std::shared_ptr<marslite_navigation::teleoperation::TeleopKeyboard> keyboardHandler
+		 = std::make_shared<marslite_navigation::teleoperation::TeleopKeyboard>();
 	
 	ROS_ASSERT(keyboardHandler->run());
 	return 0;

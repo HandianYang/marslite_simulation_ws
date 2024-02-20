@@ -5,7 +5,9 @@
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
 
-namespace marslite_shared_control {
+namespace marslite_navigation {
+
+namespace shared_control {
 
 class VirtualZone {
 public:
@@ -36,7 +38,8 @@ private:
     void robotTwistCB(const geometry_msgs::TwistConstPtr& twistPtr);
 };
 
+} // namespace shared_control
 
-} // namespace marslite_shared_control
+} // namespace marslite_navigation
 
 #endif  // #ifndef VIRTUAL_ZONE_H_

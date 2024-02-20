@@ -173,17 +173,12 @@ roslaunch marslite_navigation teleop_keyboard.launch
 roslaunch marslite_navigation teleop_joystick.launch
 ```
 
-<!-- ### Obstacle avoidance
+### Obstacle avoidance
 
-1. Publish **"static virtual zone (SVZ)"** topic:
+1. Calculate obstacle avoidance controller
 ```Shell
-rosrun marslite_shared_control static_virtual_zone
+rosrun marslite_navigation adaptive_controller
 ```
-
-2. Publish **"deformable virtual zone (DVZ)"** topic:
-```Shell
-rosrun marslite_shared_control deformable_virtual_zone
-``` -->
 
 
 ### Robotic arm control

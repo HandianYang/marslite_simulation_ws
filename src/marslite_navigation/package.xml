@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>marslite_navigation</name>
-  <version>1.0.2</version>
+  <version>0.0.0</version>
   <description>
     The package provides roslaunch scripts for starting the navigation.
   </description>
@@ -12,6 +12,9 @@
   <exec_depend>amcl</exec_depend>
   <exec_depend>map_server</exec_depend>
   <exec_depend>move_base</exec_depend>
+
+  <build_depend>dynamic_reconfigure</build_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
   
   <build_depend>geometry_msgs</build_depend>
   <exec_depend>geometry_msgs</exec_depend>

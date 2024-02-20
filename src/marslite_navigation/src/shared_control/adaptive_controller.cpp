@@ -1,19 +1,23 @@
-#include "marslite_shared_control/adaptive_controller.h"
+#include "marslite_navigation/shared_control/adaptive_controller.h"
 
 #include <math.h>
 
-namespace marslite_shared_control {
+namespace marslite_navigation {
+
+namespace shared_control {
 
 AdaptiveController::AdaptiveController(const ros::NodeHandle& nh) : nh_(nh)
 {
-    server_ = new dynamic_reconfigure::Server<AdaptiveControllerConfig>(ros::NodeHandle("~/marslite_shared_control/AdaptiveController"));
+    const std::string topicName = "/marslite_navigation/shared_control/controller";
+
+    server_ = new dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>(ros::NodeHandle("~"+topicName));
     f_ = boost::bind(&AdaptiveController::reconfigureCB, this, _1, _2);
     server_->setCallback(f_);
 
-    SVZPtr_ = std::make_shared<marslite_shared_control::StaticVirtualZone>(nh_);
-    DVZPtr_ = std::make_shared<marslite_shared_control::DeformableVirtualZone>(nh_);
+    SVZPtr_ = std::make_shared<StaticVirtualZone>(nh_);
+    DVZPtr_ = std::make_shared<DeformableVirtualZone>(nh_);
     amclPoseSubscriber_ = nh_.subscribe("/amcl_pose", 1, &AdaptiveController::amclPoseCB, this);
-    controllerPublisher_ = nh_.advertise<geometry_msgs::Twist>("/marslite_shared_control/controller", 1);
+    controllerPublisher_ = nh_.advertise<geometry_msgs::Twist>(topicName, 1);
 }
 
 void AdaptiveController::calculateController()
@@ -73,7 +77,7 @@ void AdaptiveController::calculateController()
     angularController_.velocity = -kw_*(robotPose_.theta+averageObstableAngle_) + averageObstableAngleDiff_;
 }
 
-void AdaptiveController::reconfigureCB(marslite_shared_control::AdaptiveControllerConfig& config, uint32_t level)
+void AdaptiveController::reconfigureCB(marslite_navigation::AdaptiveControllerConfig& config, uint32_t level)
 {
     kx_ = config.kx;
     ky_ = config.ky;
@@ -99,7 +103,9 @@ void AdaptiveController::amclPoseCB(const geometry_msgs::PoseWithCovarianceStamp
     } // lock(amclPoseMutex_)
 }
 
-} // namespace marslite_shared_control
+} // namespace shared_control
+
+} // namespace marslite_navigation
 
 
 
@@ -107,8 +113,8 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "adaptive_controller");
     
-    std::shared_ptr<marslite_shared_control::AdaptiveController> controllerPtr
-         = std::make_shared<marslite_shared_control::AdaptiveController>();
+    std::shared_ptr<marslite_navigation::shared_control::AdaptiveController> controllerPtr
+         = std::make_shared<marslite_navigation::shared_control::AdaptiveController>();
 
     while (ros::ok()) {
         // controllerPtr->calculateIntrusionRatio();

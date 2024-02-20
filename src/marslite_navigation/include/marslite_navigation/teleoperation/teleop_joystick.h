@@ -1,12 +1,14 @@
 #ifndef _TELEOP_JOYSTICK_H_
 #define _TELEOP_JOYSTICK_H_
 
-#include "marslite_navigation/teleop_interface.h"
+#include "marslite_navigation/teleoperation/teleop_interface.h"
 
 #include <sensor_msgs/Joy.h>
 #include <mutex>
 
 namespace marslite_navigation {
+
+namespace teleoperation {
 
 class TeleopJoystick : public TeleopInterface {
 public:
@@ -28,6 +30,8 @@ private:
     // callbacks
     void joyCB(const sensor_msgs::JoyConstPtr& joyPtr);
 };
+
+} // namespace teleoperation
 
 } // namespace marslite_navigation
 

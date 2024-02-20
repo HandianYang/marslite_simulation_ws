@@ -1,7 +1,9 @@
-#include "marslite_shared_control/virtual_zone.h"
+#include "marslite_navigation/shared_control/virtual_zone.h"
 #include "marslite_properties/Properties.h"
 
-namespace marslite_shared_control {
+namespace marslite_navigation {
+
+namespace shared_control {
 
 VirtualZone::VirtualZone(const ros::NodeHandle& nh) : nh_(nh), firstAssign_(true)
 {
@@ -38,4 +40,6 @@ void VirtualZone::robotTwistCB(const geometry_msgs::TwistConstPtr& twistPtr)
     robotTwist_.angular = twistPtr->angular;
 }
 
-} // namespace marslite_shared_control
+} // namespace shared_control
+
+} // namespace marslite_navigation

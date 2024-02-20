@@ -1,6 +1,8 @@
-#include "marslite_navigation/teleop_joystick.h"
+#include "marslite_navigation/teleoperation/teleop_joystick.h"
 
 namespace marslite_navigation {
+
+namespace teleoperation {
 
 bool TeleopJoystick::run(void)
 {
@@ -61,6 +63,8 @@ void TeleopJoystick::joyCB(const sensor_msgs::JoyConstPtr& joyPtr)
     }
 }
 
+} // namespace teleoperation
+
 } // namespace marslite_navigation
 
 
@@ -69,8 +73,8 @@ void TeleopJoystick::joyCB(const sensor_msgs::JoyConstPtr& joyPtr)
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "teleop_joystick");
-    std::shared_ptr<marslite_navigation::TeleopJoystick> joystickHandler
-        = std::make_shared<marslite_navigation::TeleopJoystick>();
+    std::shared_ptr<marslite_navigation::teleoperation::TeleopJoystick> joystickHandler
+        = std::make_shared<marslite_navigation::teleoperation::TeleopJoystick>();
     
     ROS_ASSERT(joystickHandler->run());
     return 0;

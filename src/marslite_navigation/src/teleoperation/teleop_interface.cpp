@@ -1,9 +1,11 @@
-#include "marslite_navigation/teleop_interface.h"
+#include "marslite_navigation/teleoperation/teleop_interface.h"
 
 #include <iostream>
 #include <math.h>
 
 namespace marslite_navigation {
+
+namespace teleoperation {
 
 TeleopInterface::TeleopInterface(const ros::NodeHandle& nh) : nh_(nh), publishRate_(ros::Rate(60))
 {
@@ -37,5 +39,7 @@ bool TeleopInterface::parseParameters(void)
 
     return true;
 }
+
+} // namespace teleoperation
 
 } // namespace marslite_navigation

@@ -8,6 +8,8 @@
 
 namespace marslite_navigation {
 
+namespace teleoperation {
+
 class TeleopInterface {
 public:
     explicit TeleopInterface(const ros::NodeHandle& nh = ros::NodeHandle());
@@ -42,6 +44,10 @@ protected:
     bool parseParameters(void);
 };
 
+} // namespace teleoperation
+
 } // namespace marslite_navigation
+
+
 
 #endif // _TELEOP_INTERFACE_H_
