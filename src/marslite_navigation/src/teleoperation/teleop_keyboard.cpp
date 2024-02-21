@@ -7,6 +7,9 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
+#include "marslite_properties/Properties.h"
+using marslite::move_base::Velocity;
+
 namespace marslite_navigation {
 
 namespace teleoperation {
@@ -16,6 +19,8 @@ bool TeleopKeyboard::run(void)
 	// Print out the guiding message
 	ROS_INFO_STREAM(userGuideMsg_);
 	
+	Velocity linearController, angularController;
+	float allocationWeight;
 	while (ros::ok() && !stopNode_) {
 		// Obtain keyboard inputs
 		ROS_ASSERT(getInput());
@@ -65,8 +70,24 @@ bool TeleopKeyboard::run(void)
 		}
 
 		// Publish the twist message to `/cmd_vel` topic
-		robotTwist_.linear.x  = linearVelocity_.velocity;    robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
-		robotTwist_.angular.z = angularVelocity_.velocity;   robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
+		if (directControl_) {
+			// Give output directly to '/cmd_vel'
+			robotTwist_.linear.x  = linearVelocity_.velocity;    robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
+			robotTwist_.angular.z = angularVelocity_.velocity;   robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
+		} else {
+			// Calculate the output with sum of the user inputs and the adaptive controller
+			adaptiveControllerPtr_->calculateController();
+			adaptiveControllerPtr_->calculateAllocationWeight();
+
+			linearController  = adaptiveControllerPtr_->getLinearController();
+			angularController = adaptiveControllerPtr_->getAngularController();
+			allocationWeight = adaptiveControllerPtr_->getAllocationWeight();
+
+			robotTwist_.linear.x  = linearVelocity_.velocity * allocationWeight  + linearController.velocity  * (1-allocationWeight);
+			robotTwist_.angular.z = angularVelocity_.velocity * allocationWeight + angularController.velocity * (1-allocationWeight);
+			robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
+			robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
+		}
 		robotTwistPublisher_.publish(robotTwist_);
 		
 		// Delay
@@ -121,15 +142,3 @@ bool TeleopKeyboard::getInput(void)
 } // namespace teleoperation
 
 } // namespace marslite_navigation
-
-
-
-int main(int argc, char** argv)
-{
-	ros::init(argc, argv, "teleop_keyboard");
-	std::shared_ptr<marslite_navigation::teleoperation::TeleopKeyboard> keyboardHandler
-		 = std::make_shared<marslite_navigation::teleoperation::TeleopKeyboard>();
-	
-	ROS_ASSERT(keyboardHandler->run());
-	return 0;
-}

@@ -17,7 +17,6 @@ AdaptiveController::AdaptiveController(const ros::NodeHandle& nh) : nh_(nh)
     SVZPtr_ = std::make_shared<StaticVirtualZone>(nh_);
     DVZPtr_ = std::make_shared<DeformableVirtualZone>(nh_);
     amclPoseSubscriber_ = nh_.subscribe("/amcl_pose", 1, &AdaptiveController::amclPoseCB, this);
-    controllerPublisher_ = nh_.advertise<geometry_msgs::Twist>(topicName, 1);
 }
 
 void AdaptiveController::calculateController()
@@ -77,6 +76,11 @@ void AdaptiveController::calculateController()
     angularController_.velocity = -kw_*(robotPose_.theta+averageObstableAngle_) + averageObstableAngleDiff_;
 }
 
+void AdaptiveController::calculateAllocationWeight()
+{
+    allocationWeight_ = 0.5;
+}
+
 void AdaptiveController::reconfigureCB(marslite_navigation::AdaptiveControllerConfig& config, uint32_t level)
 {
     kx_ = config.kx;
@@ -106,27 +110,3 @@ void AdaptiveController::amclPoseCB(const geometry_msgs::PoseWithCovarianceStamp
 } // namespace shared_control
 
 } // namespace marslite_navigation
-
-
-
-int main(int argc, char** argv)
-{
-    ros::init(argc, argv, "adaptive_controller");
-    
-    std::shared_ptr<marslite_navigation::shared_control::AdaptiveController> controllerPtr
-         = std::make_shared<marslite_navigation::shared_control::AdaptiveController>();
-
-    while (ros::ok()) {
-        // controllerPtr->calculateIntrusionRatio();
-        // controllerPtr->calculateAverageAngle();
-        controllerPtr->calculateController();
-        std::cout << std::fixed << std::setprecision(2)
-                << "Intrusion ratio: " << controllerPtr->getIntrusionRatio() << "\t"
-                << "Average angle: "   << controllerPtr->getAverageAngle()   << "\t\t\t\r";
-        
-        ros::Rate(60).sleep();
-        ros::spinOnce();
-    }
-
-    return 0;
-}

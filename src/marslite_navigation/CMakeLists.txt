@@ -63,8 +63,11 @@ include_directories(
 )
 
 # Declare C++ library
+
 add_library(teleop_interface
   src/teleoperation/teleop_interface.cpp
+  src/teleoperation/teleop_joystick.cpp
+  src/teleoperation/teleop_keyboard.cpp
 )
 add_dependencies(teleop_interface  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(teleop_interface  ${catkin_LIBRARIES})
@@ -77,17 +80,23 @@ add_library(virtual_zone
 add_dependencies(virtual_zone  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(virtual_zone  ${catkin_LIBRARIES})
 
+add_library(adaptive_controller
+  src/shared_control/virtual_zone.cpp
+  src/shared_control/static_virtual_zone.cpp
+  src/shared_control/deformable_virtual_zone.cpp
+  src/shared_control/adaptive_controller.cpp
+)
+add_dependencies(adaptive_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(adaptive_controller  ${catkin_LIBRARIES})
+
 # Declare C++ executables and
 #  link the library to the executables
 
-add_executable(teleop_keyboard src/teleoperation/teleop_keyboard.cpp)
-target_link_libraries(teleop_keyboard ${catkin_LIBRARIES} teleop_interface)
+add_executable(teleop_keyboard src/teleoperation/teleop_keyboard_main.cpp)
+target_link_libraries(teleop_keyboard ${catkin_LIBRARIES} teleop_interface adaptive_controller)
 
-add_executable(teleop_joystick src/teleoperation/teleop_joystick.cpp)
-target_link_libraries(teleop_joystick ${catkin_LIBRARIES} teleop_interface)
-
-add_executable(adaptive_controller src/shared_control/adaptive_controller.cpp)
-target_link_libraries(adaptive_controller ${catkin_LIBRARIES} virtual_zone)
+add_executable(teleop_joystick src/teleoperation/teleop_joystick_main.cpp)
+target_link_libraries(teleop_joystick ${catkin_LIBRARIES} teleop_interface adaptive_controller)
 
 
 ################################################################################
@@ -104,7 +113,6 @@ catkin_install_python(PROGRAMS
 install(TARGETS
     teleop_keyboard
     teleop_joystick
-    adaptive_controller
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

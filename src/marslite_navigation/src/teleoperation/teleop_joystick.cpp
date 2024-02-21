@@ -1,5 +1,8 @@
 #include "marslite_navigation/teleoperation/teleop_joystick.h"
 
+#include "marslite_properties/Properties.h"
+using marslite::move_base::Velocity;
+
 namespace marslite_navigation {
 
 namespace teleoperation {
@@ -8,6 +11,8 @@ bool TeleopJoystick::run(void)
 {
     joySubscriber_ = nh_.subscribe("/joy", 1, &TeleopJoystick::joyCB, this);
 
+    Velocity linearController, angularController;
+	float allocationWeight;
     while (ros::ok()) {
         std::unique_lock<std::mutex> lock(joyMutex_);
         {   
@@ -33,10 +38,26 @@ bool TeleopJoystick::run(void)
                 << "Angular velocity: " << angularVelocity_.velocity << "\t\t\t\r";
         }
 
-        // Publish the twist message to `/cmd_vel` topic
-        robotTwist_.linear.x  = linearVelocity_.velocity;    robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
-        robotTwist_.angular.z = angularVelocity_.velocity;   robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
-        robotTwistPublisher_.publish(robotTwist_);
+		// Publish the twist message to `/cmd_vel` topic
+		if (directControl_) {
+			// Give output directly to '/cmd_vel'
+			robotTwist_.linear.x  = linearVelocity_.velocity;    robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
+			robotTwist_.angular.z = angularVelocity_.velocity;   robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
+		} else {
+			// Calculate the output with sum of the user inputs and the adaptive controller
+			adaptiveControllerPtr_->calculateController();
+			adaptiveControllerPtr_->calculateAllocationWeight();
+
+			linearController  = adaptiveControllerPtr_->getLinearController();
+			angularController = adaptiveControllerPtr_->getAngularController();
+			allocationWeight = adaptiveControllerPtr_->getAllocationWeight();
+
+			robotTwist_.linear.x  = linearVelocity_.velocity * allocationWeight  + linearController.velocity  * (1-allocationWeight);
+			robotTwist_.angular.z = angularVelocity_.velocity * allocationWeight + angularController.velocity * (1-allocationWeight);
+			robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
+			robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
+		}
+		robotTwistPublisher_.publish(robotTwist_);
 
         // Delay 
         publishRate_.sleep();
@@ -66,16 +87,3 @@ void TeleopJoystick::joyCB(const sensor_msgs::JoyConstPtr& joyPtr)
 } // namespace teleoperation
 
 } // namespace marslite_navigation
-
-
-
-
-int main(int argc, char** argv)
-{
-    ros::init(argc, argv, "teleop_joystick");
-    std::shared_ptr<marslite_navigation::teleoperation::TeleopJoystick> joystickHandler
-        = std::make_shared<marslite_navigation::teleoperation::TeleopJoystick>();
-    
-    ROS_ASSERT(joystickHandler->run());
-    return 0;
-}

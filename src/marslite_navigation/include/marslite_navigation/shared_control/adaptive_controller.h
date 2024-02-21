@@ -13,6 +13,7 @@
 #include "marslite_properties/Properties.h"
 #include "marslite_navigation/shared_control/static_virtual_zone.h"
 #include "marslite_navigation/shared_control/deformable_virtual_zone.h"
+using marslite::move_base::Velocity;
 
 
 namespace marslite_navigation {
@@ -23,9 +24,14 @@ class AdaptiveController {
 public:;
     explicit AdaptiveController(const ros::NodeHandle& nh = ros::NodeHandle());
     void calculateController();
+    void calculateAllocationWeight();
 
-    inline float getIntrusionRatio(void) const { return this->intrusionRatio_; }
-    inline float getAverageAngle(void) const { return this->averageObstableAngle_; } 
+    inline float getIntrusionRatio(void) const noexcept { return this->intrusionRatio_; }
+    inline float getAverageAngle(void) const noexcept { return this->averageObstableAngle_; }
+
+    inline Velocity getLinearController(void) const noexcept { return this->linearController_; }
+    inline Velocity getAngularController(void) const noexcept { return this->angularController_; }
+    inline float getAllocationWeight(void) const noexcept { return this->allocationWeight_; }
 
 private:
     // ROS related
@@ -33,16 +39,23 @@ private:
     ros::Publisher controllerPublisher_;
     ros::Subscriber amclPoseSubscriber_;
 
+    // metrics
     float intrusionRatio_;
     float averageObstableAngle_;
     float averageObstableAngleDiff_;
+    float allocationWeight_;
 
+    // proportional gains
     float kx_, ky_, kw_;
 
-    marslite::move_base::Velocity linearController_;
-    marslite::move_base::Velocity angularController_;
+    // translational velocity controller
+    Velocity linearController_;
+    // rotational velocity controller
+    Velocity angularController_;
 
+    // static virtual zone (SVZ)
     std::shared_ptr<StaticVirtualZone> SVZPtr_;
+    // deformable virtual zone (DVZ)
     std::shared_ptr<DeformableVirtualZone> DVZPtr_;
 
     // AMCL pose

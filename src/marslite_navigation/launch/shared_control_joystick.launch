@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <!-- Decide whether or not the user input directly controls the robot. -->
-  <arg name="direct_control" default="true"/>
-
-  <!-- Decide whether or not the robot status will be printed to the console. -->
-  <arg name="message_enabled" default="true"/>
-
   <!-- Decide whether or not the robot will gradually slow down
         when there's no incoming inputs. -->
   <arg name="auto_slow_down_enabled" default="true"/>
-  
-  <!-- Launch the `teleop_joystick` node. -->
+
+  <!-- Launch the `teleop_keyboard` node. -->
   <node pkg="marslite_navigation" type="teleop_joystick" name="teleop_joystick"  output="screen">
-    <param name="direct_control" value="$(arg direct_control)"/>
-    <param name="message_enabled" value="$(arg message_enabled)"/>
+    <!-- Decide whether or not the user input directly controls the robot. -->
+    <param name="direct_control" value="false"/>
+    <!-- Decide whether or not the robot status will be printed to the console. -->
+    <param name="message_enabled" value="false"/>
+    <!-- Decide whether or not the robot will gradually slow down
+        when there's no incoming inputs. -->
     <param name="auto_slow_down_enabled" value="$(arg auto_slow_down_enabled)"/>
     <rosparam file="$(find marslite_navigation)/config/teleop_params.yaml"/>
   </node>

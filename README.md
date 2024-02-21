@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Tue, Feb 20, 2024
+* Last update: Wed, Feb 21, 2024
 
 ## Prerequisites
 
@@ -32,19 +32,7 @@ docker pull handianyang/marslite_simulation:v1.1.2-MPC-Bugfix
 ```
 
 **[Optional]** Of course you could check [the tags of my image](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to specify older versions, but the complete features of the system are not guarenteed. For example, to obtain the base image (the most primitive one):
-```Shell
-docker pull handianyang/marslite_simulation:v1.0.0-Base
-```
-
-## Usage
-
-### Download the GitHub repository
-
-It's recommended to download it under `~` directory:
-```Shell
-cd ~
-git clone https://github.com/HandianYang/marslite_simulation_ws.git
-```
+```Shell    // controllerPublisher_ = nh_.advertise<geometry_msgs::Twist>(topicName, 1);
 
 ### Enter the Docker container
 
@@ -163,21 +151,24 @@ roslaunch marslite_navigation slam_gmapping.launch
 roslaunch marslite_navigation navigation.launch
 ```
 
-3. Directly control the robot with keyboard inputs:
+3. Directly drive the robot with keyboard inputs:
 ```Shell
 roslaunch marslite_navigation teleop_keyboard.launch
 ```
 
-4. Directly control the robot with joystick inputs:
+4. Directly drive the robot with joystick inputs:
 ```Shell
 roslaunch marslite_navigation teleop_joystick.launch
 ```
 
-### Obstacle avoidance
-
-1. Calculate obstacle avoidance controller
+5. Drive the robot with shared autonomy with keyboard inputs:
 ```Shell
-rosrun marslite_navigation adaptive_controller
+roslaunch marslite_navigation shared_control_keyboard.launch
+```
+
+6. Drive the robot with shared autonomy with joystick inputs:
+```Shell
+roslaunch marslite_navigation shared_control_joystick.launch
 ```
 
 

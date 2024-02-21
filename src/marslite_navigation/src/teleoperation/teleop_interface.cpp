@@ -1,8 +1,5 @@
 #include "marslite_navigation/teleoperation/teleop_interface.h"
 
-#include <iostream>
-#include <math.h>
-
 namespace marslite_navigation {
 
 namespace teleoperation {
@@ -11,6 +8,8 @@ TeleopInterface::TeleopInterface(const ros::NodeHandle& nh) : nh_(nh), publishRa
 {
     ROS_ASSERT(parseParameters());
     robotTwistPublisher_  = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+
+    adaptiveControllerPtr_ = std::make_shared<AdaptiveController>(nh_);
 }
 
 bool TeleopInterface::parseParameters(void)
@@ -31,6 +30,9 @@ bool TeleopInterface::parseParameters(void)
     angularVelocityStep_ = pNh.param<float>("angular_velocity_step", 0.05);
 
     /***** Parsed parameters (launch) *****/
+    // Determine whether the user input should directly control the robot
+    directControl_ = pNh.param<bool>("direct_control", true);
+
     // Determine whether the node should print out the message
     messageEnabled_ = pNh.param<bool>("message_enabled", true);
 
