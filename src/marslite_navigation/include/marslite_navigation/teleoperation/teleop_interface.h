@@ -22,7 +22,7 @@ public:
 protected:
     // ROS-related
     ros::NodeHandle nh_;
-    ros::Publisher robotTwistPublisher_;
+    ros::Publisher userInputPublisher_;
     ros::Rate publishRate_;
 
     // parsed parameters (yaml)
@@ -37,7 +37,7 @@ protected:
     bool autoSlowDownEnabled_;
 
     // robot messages
-    geometry_msgs::Twist robotTwist_;
+    geometry_msgs::Twist userInput_;
     marslite::move_base::Pose robotPose_;
 
     // adaptive controller

@@ -13,7 +13,7 @@
 #include "marslite_properties/Properties.h"
 #include "marslite_navigation/shared_control/static_virtual_zone.h"
 #include "marslite_navigation/shared_control/deformable_virtual_zone.h"
-using marslite::move_base::Velocity;
+// using marslite::move_base::Velocity;
 
 
 namespace marslite_navigation {
@@ -23,21 +23,23 @@ namespace shared_control {
 class AdaptiveController {
 public:;
     explicit AdaptiveController(const ros::NodeHandle& nh = ros::NodeHandle());
-    void calculateController();
-    void calculateAllocationWeight();
+    bool run();
 
     inline float getIntrusionRatio(void) const noexcept { return this->intrusionRatio_; }
     inline float getAverageAngle(void) const noexcept { return this->averageObstableAngle_; }
 
-    inline Velocity getLinearController(void) const noexcept { return this->linearController_; }
-    inline Velocity getAngularController(void) const noexcept { return this->angularController_; }
-    inline float getAllocationWeight(void) const noexcept { return this->allocationWeight_; }
+    // inline Velocity getLinearController(void) const noexcept { return this->linearController_; }
+    // inline Velocity getAngularController(void) const noexcept { return this->angularController_; }
+    // inline float getAllocationWeight(void) const noexcept { return this->allocationWeight_; }
 
 private:
     // ROS related
     ros::NodeHandle nh_;
-    ros::Publisher controllerPublisher_;
+    ros::Publisher assistiveInputPublisher_;
+    ros::Publisher sharedControllerPublisher_;
     ros::Subscriber amclPoseSubscriber_;
+    ros::Subscriber userInputSubscriber_;
+    ros::Rate publishRate_;
 
     // metrics
     float intrusionRatio_;
@@ -48,10 +50,10 @@ private:
     // proportional gains
     float kx_, ky_, kw_;
 
-    // translational velocity controller
-    Velocity linearController_;
-    // rotational velocity controller
-    Velocity angularController_;
+    // velocity controller
+    geometry_msgs::Twist userInput_;
+    geometry_msgs::Twist assistiveInput_;
+    geometry_msgs::Twist sharedController_;
 
     // static virtual zone (SVZ)
     std::shared_ptr<StaticVirtualZone> SVZPtr_;
@@ -67,6 +69,12 @@ private:
     void reconfigureCB(marslite_navigation::AdaptiveControllerConfig& config, uint32_t level);
     dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>* server_;
     dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>::CallbackType f_;
+
+    // 
+    void userInputCB(const geometry_msgs::TwistConstPtr& userInputPtr);
+
+    void calculateAssistiveInput();
+    void calculateAllocationWeight();
 };
 
 } // namespace shared_control

@@ -69,26 +69,10 @@ bool TeleopKeyboard::run(void)
 				<< "Angular velocity: " << angularVelocity_.velocity << "\t\t\t\r";
 		}
 
-		// Publish the twist message to `/cmd_vel` topic
-		if (directControl_) {
-			// Give output directly to '/cmd_vel'
-			robotTwist_.linear.x  = linearVelocity_.velocity;    robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
-			robotTwist_.angular.z = angularVelocity_.velocity;   robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
-		} else {
-			// Calculate the output with sum of the user inputs and the adaptive controller
-			adaptiveControllerPtr_->calculateController();
-			adaptiveControllerPtr_->calculateAllocationWeight();
-
-			linearController  = adaptiveControllerPtr_->getLinearController();
-			angularController = adaptiveControllerPtr_->getAngularController();
-			allocationWeight = adaptiveControllerPtr_->getAllocationWeight();
-
-			robotTwist_.linear.x  = linearVelocity_.velocity * allocationWeight  + linearController.velocity  * (1-allocationWeight);
-			robotTwist_.angular.z = angularVelocity_.velocity * allocationWeight + angularController.velocity * (1-allocationWeight);
-			robotTwist_.linear.y  = 0;   robotTwist_.linear.z  = 0;
-			robotTwist_.angular.x = 0;   robotTwist_.angular.y = 0;
-		}
-		robotTwistPublisher_.publish(robotTwist_);
+		// Publish the user input
+		userInput_.linear.x  = linearVelocity_.velocity;
+		userInput_.angular.z = angularVelocity_.velocity;
+		userInputPublisher_.publish(userInput_);
 		
 		// Delay
 		publishRate_.sleep();

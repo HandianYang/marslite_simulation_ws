@@ -92,10 +92,10 @@ target_link_libraries(adaptive_controller  ${catkin_LIBRARIES})
 # Declare C++ executables and
 #  link the library to the executables
 
-add_executable(teleop_keyboard src/teleoperation/teleop_keyboard_main.cpp)
+add_executable(teleop_keyboard src/teleop_keyboard_main.cpp)
 target_link_libraries(teleop_keyboard ${catkin_LIBRARIES} teleop_interface adaptive_controller)
 
-add_executable(teleop_joystick src/teleoperation/teleop_joystick_main.cpp)
+add_executable(teleop_joystick src/teleop_joystick_main.cpp)
 target_link_libraries(teleop_joystick ${catkin_LIBRARIES} teleop_interface adaptive_controller)
 
 
@@ -120,6 +120,7 @@ install(TARGETS
 install(TARGETS
     teleop_interface
     virtual_zone
+    adaptive_controller
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )

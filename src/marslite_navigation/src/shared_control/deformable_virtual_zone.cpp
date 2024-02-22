@@ -9,7 +9,7 @@ namespace shared_control {
 
 DeformableVirtualZone::DeformableVirtualZone(const ros::NodeHandle& nh) : VirtualZone(nh)
 {
-    const std::string topicName = "/marslite_navigation/shared_control/DVZ";
+    const std::string topicName = "/marslite_navigation/DVZ";
 
     server_ = new dynamic_reconfigure::Server<marslite_navigation::VirtualZoneConfig>(ros::NodeHandle("~"+topicName));
     f_ = boost::bind(&DeformableVirtualZone::reconfigureCB, this, _1, _2);

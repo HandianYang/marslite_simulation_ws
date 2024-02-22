@@ -9,7 +9,7 @@ namespace shared_control {
 
 StaticVirtualZone::StaticVirtualZone(const ros::NodeHandle& nh) : VirtualZone(nh)
 {
-    const std::string topicName = "/marslite_navigation/shared_control/SVZ";
+    const std::string topicName = "/marslite_navigation/SVZ";
 
     server_ = new dynamic_reconfigure::Server<marslite_navigation::VirtualZoneConfig>(ros::NodeHandle("~"+topicName));
     f_ = boost::bind(&StaticVirtualZone::reconfigureCB, this, _1, _2);

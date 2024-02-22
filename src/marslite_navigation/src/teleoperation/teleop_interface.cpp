@@ -5,9 +5,11 @@ namespace marslite_navigation {
 namespace teleoperation {
 
 TeleopInterface::TeleopInterface(const ros::NodeHandle& nh) : nh_(nh), publishRate_(ros::Rate(60))
-{
+{   
     ROS_ASSERT(parseParameters());
-    robotTwistPublisher_  = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+    
+    const std::string topicName = directControl_ ? "/cmd_vel" : "/marslite_navigation/user_input";
+    userInputPublisher_  = nh_.advertise<geometry_msgs::Twist>(topicName, 1);
 
     adaptiveControllerPtr_ = std::make_shared<AdaptiveController>(nh_);
 }

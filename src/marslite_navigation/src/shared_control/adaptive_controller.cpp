@@ -6,20 +6,42 @@ namespace marslite_navigation {
 
 namespace shared_control {
 
-AdaptiveController::AdaptiveController(const ros::NodeHandle& nh) : nh_(nh)
+AdaptiveController::AdaptiveController(const ros::NodeHandle& nh) : nh_(nh), publishRate_(ros::Rate(60))
 {
-    const std::string topicName = "/marslite_navigation/shared_control/controller";
+    const std::string topicName = "/marslite_navigation/shared_controller";
 
     server_ = new dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>(ros::NodeHandle("~"+topicName));
     f_ = boost::bind(&AdaptiveController::reconfigureCB, this, _1, _2);
     server_->setCallback(f_);
+    
+    assistiveInputPublisher_ = nh_.advertise<geometry_msgs::Twist>("/marslite_navigation/assistive_input", 1);
+    sharedControllerPublisher_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+    amclPoseSubscriber_ = nh_.subscribe("/amcl_pose", 1, &AdaptiveController::amclPoseCB, this);
+    userInputSubscriber_ = nh_.subscribe("marslite_navigation/user_input", 1, &AdaptiveController::userInputCB, this);
 
     SVZPtr_ = std::make_shared<StaticVirtualZone>(nh_);
     DVZPtr_ = std::make_shared<DeformableVirtualZone>(nh_);
-    amclPoseSubscriber_ = nh_.subscribe("/amcl_pose", 1, &AdaptiveController::amclPoseCB, this);
 }
 
-void AdaptiveController::calculateController()
+bool AdaptiveController::run()
+{
+    while (ros::ok()) {
+        this->calculateAssistiveInput();
+        this->calculateAllocationWeight();
+        sharedController_.linear.x = userInput_.linear.x * allocationWeight_ + assistiveInput_.linear.x * (1 - allocationWeight_);
+        sharedController_.angular.z = userInput_.angular.z * allocationWeight_ + assistiveInput_.angular.z * (1 - allocationWeight_);
+        
+        assistiveInputPublisher_.publish(assistiveInput_);
+        sharedControllerPublisher_.publish(sharedController_);
+
+        publishRate_.sleep();
+        ros::spinOnce();
+    }
+
+    return true;
+}
+
+void AdaptiveController::calculateAssistiveInput()
 {
     const sensor_msgs::LaserScan& SVZ_fields = SVZPtr_->getFieldsData();
     const sensor_msgs::LaserScan& DVZ_fields = DVZPtr_->getFieldsData();
@@ -72,8 +94,8 @@ void AdaptiveController::calculateController()
     const float Jx = marslite::math::integral(marslite::THETA, JxFunc);
     const float Jy = marslite::math::integral(marslite::THETA, JyFunc);
 
-    linearController_.velocity = -kx_*Jx*cos(robotPose_.theta)-ky_*Jy*sin(robotPose_.theta);
-    angularController_.velocity = -kw_*(robotPose_.theta+averageObstableAngle_) + averageObstableAngleDiff_;
+    assistiveInput_.linear.x  = -kx_*Jx*cos(robotPose_.theta) - ky_*Jy*sin(robotPose_.theta);
+    assistiveInput_.angular.z = -kw_*(robotPose_.theta + averageObstableAngle_) + averageObstableAngleDiff_;
 }
 
 void AdaptiveController::calculateAllocationWeight()
@@ -105,6 +127,11 @@ void AdaptiveController::amclPoseCB(const geometry_msgs::PoseWithCovarianceStamp
         robotPose_.y = amclPosePtr->pose.pose.position.y;
         robotPose_.theta = yaw;
     } // lock(amclPoseMutex_)
+}
+
+void AdaptiveController::userInputCB(const geometry_msgs::TwistConstPtr& userInputPtr)
+{
+    userInput_ = *userInputPtr;
 }
 
 } // namespace shared_control
