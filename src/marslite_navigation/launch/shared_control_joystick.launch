@@ -16,4 +16,7 @@
     <rosparam file="$(find marslite_navigation)/config/teleop_params.yaml"/>
   </node>
 
+  <node pkg="marslite_navigation" type="shared_control" name="shared_control"  output="screen">
+  </node>
+
 </launch>

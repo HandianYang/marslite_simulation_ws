@@ -1,5 +1,5 @@
-#ifndef APATIVE_CONTROLLER_H_
-#define APATIVE_CONTROLLER_H_
+#ifndef SHARED_CONTROL_H
+#define SHARED_CONTROL_H
 
 #include <ros/ros.h>
 #include <tf/tf.h>
@@ -8,21 +8,20 @@
 #include <geometry_msgs/Twist.h>
 
 #include <dynamic_reconfigure/server.h>
-#include "marslite_navigation/AdaptiveControllerConfig.h"
+#include "marslite_navigation/SharedControlConfig.h"
 
 #include "marslite_properties/Properties.h"
 #include "marslite_navigation/shared_control/static_virtual_zone.h"
 #include "marslite_navigation/shared_control/deformable_virtual_zone.h"
-// using marslite::move_base::Velocity;
 
 
 namespace marslite_navigation {
 
 namespace shared_control {
 
-class AdaptiveController {
+class SharedControl {
 public:;
-    explicit AdaptiveController(const ros::NodeHandle& nh = ros::NodeHandle());
+    explicit SharedControl(const ros::NodeHandle& nh = ros::NodeHandle());
     bool run();
 
     inline float getIntrusionRatio(void) const noexcept { return this->intrusionRatio_; }
@@ -66,9 +65,9 @@ private:
     std::mutex amclPoseMutex_;
 
     // dynamic reconfigure
-    void reconfigureCB(marslite_navigation::AdaptiveControllerConfig& config, uint32_t level);
-    dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>* server_;
-    dynamic_reconfigure::Server<marslite_navigation::AdaptiveControllerConfig>::CallbackType f_;
+    void reconfigureCB(marslite_navigation::SharedControlConfig& config, uint32_t level);
+    dynamic_reconfigure::Server<marslite_navigation::SharedControlConfig>* server_;
+    dynamic_reconfigure::Server<marslite_navigation::SharedControlConfig>::CallbackType f_;
 
     // 
     void userInputCB(const geometry_msgs::TwistConstPtr& userInputPtr);
@@ -81,4 +80,4 @@ private:
 
 } // namespace marslite_navigation
 
-#endif  // #define APATIVE_CONTROLLER_H_
+#endif  // #define SHARED_CONTROL_H

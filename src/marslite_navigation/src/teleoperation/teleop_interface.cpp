@@ -10,8 +10,6 @@ TeleopInterface::TeleopInterface(const ros::NodeHandle& nh) : nh_(nh), publishRa
     
     const std::string topicName = directControl_ ? "/cmd_vel" : "/marslite_navigation/user_input";
     userInputPublisher_  = nh_.advertise<geometry_msgs::Twist>(topicName, 1);
-
-    adaptiveControllerPtr_ = std::make_shared<AdaptiveController>(nh_);
 }
 
 bool TeleopInterface::parseParameters(void)

@@ -7,9 +7,6 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
-#include "marslite_properties/Properties.h"
-using marslite::move_base::Velocity;
-
 namespace marslite_navigation {
 
 namespace teleoperation {
@@ -19,8 +16,6 @@ bool TeleopKeyboard::run(void)
 	// Print out the guiding message
 	ROS_INFO_STREAM(userGuideMsg_);
 	
-	Velocity linearController, angularController;
-	float allocationWeight;
 	while (ros::ok() && !stopNode_) {
 		// Obtain keyboard inputs
 		ROS_ASSERT(getInput());

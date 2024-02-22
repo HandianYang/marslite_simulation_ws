@@ -1,8 +1,5 @@
 #include "marslite_navigation/teleoperation/teleop_joystick.h"
 
-#include "marslite_properties/Properties.h"
-using marslite::move_base::Velocity;
-
 namespace marslite_navigation {
 
 namespace teleoperation {
@@ -10,9 +7,7 @@ namespace teleoperation {
 bool TeleopJoystick::run(void)
 {
     joySubscriber_ = nh_.subscribe("/joy", 1, &TeleopJoystick::joyCB, this);
-
-    Velocity linearController, angularController;
-	float allocationWeight;
+    
     while (ros::ok()) {
         std::unique_lock<std::mutex> lock(joyMutex_);
         {   

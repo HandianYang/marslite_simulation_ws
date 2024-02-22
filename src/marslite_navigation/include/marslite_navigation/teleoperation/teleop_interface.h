@@ -5,9 +5,6 @@
 #include <geometry_msgs/Twist.h>
 
 #include "marslite_properties/Properties.h"
-#include "marslite_navigation/shared_control/adaptive_controller.h"
-
-using marslite_navigation::shared_control::AdaptiveController;
 
 namespace marslite_navigation {
 
@@ -36,12 +33,8 @@ protected:
     bool messageEnabled_;
     bool autoSlowDownEnabled_;
 
-    // robot messages
+    // user input message
     geometry_msgs::Twist userInput_;
-    marslite::move_base::Pose robotPose_;
-
-    // adaptive controller
-    std::shared_ptr<AdaptiveController> adaptiveControllerPtr_;
 
 protected:
     /**

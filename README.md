@@ -161,12 +161,14 @@ roslaunch marslite_navigation teleop_keyboard.launch
 roslaunch marslite_navigation teleop_joystick.launch
 ```
 
-5. Drive the robot with shared autonomy with keyboard inputs:
+5. Drive the robot with shared autonomy with keyboard inputs
+(`navigation.launch` is required to launch)
 ```Shell
 roslaunch marslite_navigation shared_control_keyboard.launch
 ```
 
-6. Drive the robot with shared autonomy with joystick inputs:
+6. Drive the robot with shared autonomy with joystick inputs
+(`navigation.launch` is required to launch)
 ```Shell
 roslaunch marslite_navigation shared_control_joystick.launch
 ```

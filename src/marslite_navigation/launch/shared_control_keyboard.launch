@@ -15,5 +15,8 @@
     <param name="auto_slow_down_enabled" value="$(arg auto_slow_down_enabled)"/>
     <rosparam file="$(find marslite_navigation)/config/teleop_params.yaml"/>
   </node>
+
+  <node pkg="marslite_navigation" type="shared_control" name="shared_control"  output="screen">
+  </node>
   
 </launch>
