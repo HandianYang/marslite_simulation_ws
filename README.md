@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Thu, Feb 22, 2024
+* Last update: Mon, Feb 26, 2024
 
 ## Prerequisites
 
@@ -31,9 +31,6 @@ To utilize the simulator system, users are required to download my designed imag
 docker pull handianyang/marslite_simulation:v1.1.2-MPC-Bugfix
 ```
 
-**[Optional]** Of course you could check [the tags of my image](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to specify older versions, but the complete features of the system are not guarenteed. For example, to obtain the base image (the most primitive one):
-```Shell    // controllerPublisher_ = nh_.advertise<geometry_msgs::Twist>(topicName, 1);
-
 ### Enter the Docker container
 
 Open a new terminal window (or press `Ctrl+Alt+t`) and reach to the root of the `marslite_simulation_ws` workspace directory (assume you have the workspace directory placed under `~` directory):
@@ -57,7 +54,7 @@ Specifically, the above bash script can be executed when you expect to:
 
 #### 2. Enter a container with the specific image tag
 
-You could specify the previous version of the image by adding version id (only consecutive numbers with no dots) as parameters. 
+You could specify the previous version of the image by adding version id (consecutive numbers with no dots) as parameters. 
 ```Shell
 source docker_run.sh <tag_number>
 ```

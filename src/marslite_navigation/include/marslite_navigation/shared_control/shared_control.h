@@ -27,10 +27,6 @@ public:;
     inline float getIntrusionRatio(void) const noexcept { return this->intrusionRatio_; }
     inline float getAverageAngle(void) const noexcept { return this->averageObstableAngle_; }
 
-    // inline Velocity getLinearController(void) const noexcept { return this->linearController_; }
-    // inline Velocity getAngularController(void) const noexcept { return this->angularController_; }
-    // inline float getAllocationWeight(void) const noexcept { return this->allocationWeight_; }
-
 private:
     // ROS related
     ros::NodeHandle nh_;
