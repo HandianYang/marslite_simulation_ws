@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Mon, Feb 26, 2024
+* Last update: Tue, Apr 16, 2024
 
 ## Prerequisites
 
@@ -102,7 +102,7 @@ sd
 ### The pathname should also be changed if necessary.
 ```
 
-From now on, you can begin your development! For detailed features and their corresponding commands, please refer to the Instruction section below.
+From now on, you can begin your development! For detailed features and their corresponding commands, please refer to the **Instruction section** below.
 
 
 ### Remove the Docker container
@@ -113,7 +113,9 @@ Simply run the command **outside** the Docker container:
 ```Shell
 docker rm marslite  # for container based on latest tag
 ```
-where `marslite` is the default name of the container. Or if your container was based on previous version, remember to change the container name to `marslite_test`:
+where `marslite` is the default name of the container. 
+
+If your container was based on previous version, remember to change the container name to `marslite_prev`:
 ```Shell
 docker rm marslite_prev  # for container based on previous tag
 ```
@@ -127,14 +129,33 @@ Note that every command should be executed **on the Docker container** rather th
 ### Launch Gazebo world
 
 1. Launch a **Gazebo world of supermarket environment** with Marslite robot:
-```Shell
-roslaunch mars_lite_description gazebo_supermarket.launch
-```
+    ```Shell
+    ### default settings
+    roslaunch mars_lite_description gazebo_supermarket.launch
 
-2. **(Optional)** Spawn a Marslite robot in an **existing Gazebo world**:
-```Shell
-roslaunch mars_lite_description spawn_mars.launch
-```
+    ### realsense D435 camera & ros_bridge launched
+    roslaunch mars_lite_description gazebo_supermarket.launch use_rosbridge:=true realsense_enabled:=true
+    ```
+
+2. Spawn a Marslite robot in an **existing Gazebo world**:
+    ```Shell
+    roslaunch mars_lite_description spawn_mars.launch
+    ```
+    **(NOTE) This SHALL NOT be launched with `gazebo_supermarket.launch`.**
+
+### Launch the T265 camera
+1. Launch the realsense T265 camera nodelet:
+    ```Shell
+    roslaunch realsense2_camera rs_t265.launch enable_fisheye1:=true enable_fisheye2:=true
+    ```
+
+2. Launch the realsense T265 camera nodelet with its pose displayed in RVIZ:
+    ```Shell
+    roslaunch realsense2_camera demo_t265.launch
+    ```
+    **(NOTE) <br>
+    (1) This SHALL NOT be launched with `rs_t265.launch`.<br>
+    (2) The `demo_t265.launch` does not contain `enable_fisheye1` and `enable_fisheye2` parameters.**
 
 ### Navigation features
 
