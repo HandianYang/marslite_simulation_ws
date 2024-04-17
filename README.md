@@ -2,9 +2,9 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Tue, Apr 16, 2024
+* Last update: Wed, Apr 17, 2024
 
-## Prerequisites
+<!-- ## Prerequisites
 
 ### Hardware (PC)
 - NVIDIA GPU (compatible with NVIDIA GPU driver 515 version)
@@ -12,7 +12,7 @@
 ### Software
 - NVIDIA-driver-515
 - nvidia-docker2
-- docker engine
+- docker engine -->
 
 ## Setup
 
@@ -38,21 +38,16 @@ Open a new terminal window (or press `Ctrl+Alt+t`) and reach to the root of the 
 cd ~/marslite_simulation_ws
 ```
 
-#### 1. Enter a container with the latest image tag
+#### Enter a container with the latest image tag
 
 Run the following command to enter the Docker container based on the latest tag of `handianyang/marslite_simulation` image:
 ```Shell
 source docker_run.sh
 ```
 
-This command creates a Docker container named `marslite` and guides you in.
+This command creates a DockeIf you've encountered any warnings or errors while building the workspace, please feel free to report an issue!
 
-Specifically, the above bash script can be executed when you expect to:
-- launch a new container
-- enter a running container (when you work with multiple terminal windows)
-- restart an exited container (when you've left the container previously)
-
-#### 2. Enter a container with the specific image tag
+#### (Optional) Enter a container with the specific image tag
 
 You could specify the previous version of the image by adding version id (consecutive numbers with no dots) as parameters. 
 ```Shell
@@ -81,9 +76,6 @@ cm
 ### The above is the same as ...
 ###   catkin_make
 ```
-
-If you've encountered any warnings or errors while building the workspace, please feel free to report an issue!
-
 
 ### Source the workspace bash script
 

@@ -1,6 +1,9 @@
 #ifndef _MPC_H_
 #define _MPC_H_
 
+#include <cmath>
+#include <algorithm>
+
 // osqp-eigen
 #include "OsqpEigen/OsqpEigen.h"
 
@@ -33,7 +36,7 @@
 
 namespace mpc {
 
-#define M_PI 3.14159265358979323846
+// #define M_PI 3.14159265358979323846
 
 class ModelPredictiveControl {
 public:
@@ -43,20 +46,8 @@ public:
 	void performReplenishment();
 
 private:
-	void castMPCToQPHessian();
-	int castMPCToQPGradient();
-	void castMPCToQPConstraintMatrix();
-	void castMPCToQPConstraintVectors();
-
-	void joint_state_callback(const sensor_msgs::JointState& joint_state);
-	void mobile_platform_velocity_callback(const geometry_msgs::Twist& vel);
-	void apriltag_detection_callback(const apriltags_ros::AprilTagDetectionArray& detection);
-	//void yolo_detection_callback(const darknet_ros_msgs::BoundingBoxesWithDepthImage& detection);
-	void obstacles_detection_callback(const std_msgs::Float64MultiArray& obs_det_output);
-	//void realsense_intrinsic_matrix_callback(const sensor_msgs::CameraInfo& cam);
-
-	int inverseKinematic(const tf::StampedTransform& transformation, double ik_sols[]);
-	int inverseKinematic(const tf::Transform& transformation, double ik_sols[]);
+	bool inverseKinematic(const tf::StampedTransform& transformation, double ik_sols[]);
+	bool inverseKinematic(const tf::Transform& transformation, double ik_sols[]);
 
 	double trajectoryPlanning(double ini_v, double t);
 	double trajectoryPlanning(double ini_v, double ini_a, double t);
@@ -65,63 +56,114 @@ private:
 	void stop();
 	bool reachDesiredPose(const tf::StampedTransform& ee_desired_pose, const bool& pose_is_global);
 
-	//MPC problem parameters
-	Eigen::Matrix<double, 7, 7> A, B;
-	Eigen::Matrix<double, 7, 1> xMax, xMin, uMax, uMin, aMax, aMin, x0, xf;
-	tf::StampedTransform pose0, posef;
-	Eigen::DiagonalMatrix<double, 7> Q, R;
-	float time_step;
-	int mpcWindow;
-	ros::Rate loop_rate;
+	/* ************************* *
+	 *       MPC parameters      *
+	 * ************************* */
+	float mpcTimeStep_;			// sample time
+	int mpcWindow_;				// preview window (prediction horizon)
 
-	double trajectory_total_t, trajectory_start_t, trajectory_exec_t;
-	double trajectory_total_t_mob_plat, trajectory_start_t_mob_plat, trajectory_exec_t_mob_plat;
-	double trajectory_ini_v_mob_plat;
+	Eigen::Matrix<double, 7, 7> A_;				// dynamic matrix
+	Eigen::Matrix<double, 7, 7> B_;				// control matrix
+	Eigen::DiagonalMatrix<double, 7> Q_, R_;	// weight matrices
+	Eigen::Matrix<double, 7, 1> xMax_, xMin_;	// state inequality constraints
+	Eigen::Matrix<double, 7, 1> uMax_, uMin_;	// input inequality constraints
+	Eigen::Matrix<double, 7, 1> aMax_, aMin_;	// input inequality constraints
+	Eigen::Matrix<double, 7, 1> x0_;			// initial state space
+	Eigen::Matrix<double, 7, 1> xf_;			// reference state space
 
-	bool on_spot;
+	/// ?
+	double trajectoryTotalTime_;
+	double trajectoryStartTime_;
+	double trajectoryExecTime_;
 
-	//QP problem parameters
-	Eigen::SparseMatrix<double> hessianMatrix, constraintMatrix;
-	Eigen::VectorXd gradient, lowerBound, upperBound;
+	/// ?
+	double mobilePlatformTrajectoryTotalTime_;
+	double mobilePlatformTrajectoryStartTime_;
+	double mobilePlatformTrajectoryExecTime_;
 
-	double distance_warning_field, distance_protective_field;
-	double dec_factor, dec_factor_previous;
+	double mobilePlatformTrajectoryInitialVelcity_;
+	geometry_msgs::Twist mobilePlatformCurrentTwist_;
 
-	OsqpEigen::Solver solver;
+	tf::StampedTransform mobilePlatformInitialPose_;	// "/odom" <- "/base_footprint"
+	tf::StampedTransform pose0_;	// "/tm_base_link" <- "/tm_tool0"
+	tf::StampedTransform posef_;	
 
+	/// ?
+	double mobilePlatformBeginPosition_;
+	double mobilePlatformDesiredPosition_;
+
+	/// flags
+	bool apriltagDetected_;				// whether any apriltag is detected
+	bool obstaclesDetectionEnabled_;	// whether the obstacle detection feature is enabled
+	bool onSpot_;					// ???
+	bool desiredPoseIsGlobal_;		// ???
+	int callbackOrder_;				// ???
+
+	/// QP problem parameters
+	Eigen::SparseMatrix<double> hessianMatrix_;
+	Eigen::SparseMatrix<double> constraintMatrix_;
+	Eigen::VectorXd gradient_, lowerBound_, upperBound_;
+
+	/// config parameters (constant)
+	double distanceWarningField_, distanceProtectiveField_;
+	/// config parameters 
+	double decFactor_, decFactorPrevious_;
+
+	OsqpEigen::Solver solver_;
+
+	/// ROS related
 	ros::NodeHandle nh_;
-	ros::Publisher gripper_pub;
-	ros::Publisher joint_velocity_pub;
-	ros::Publisher mobile_platform_velocity_pub;
-	ros::Publisher apriltag_detection_cmd_pub;
+	ros::Publisher gripperPublisher_;
+	ros::Publisher jointVelocityPublisher_;
+	ros::Publisher mobilePlatformVelocityPublisher_;
+	ros::Publisher apriltagDetectionCmdPublisher_;
 	ros::Publisher des_ee_tra_pub;
 	ros::Publisher ee_tra_pub;
 	ros::Publisher des_ee_state_pub;
 	ros::Publisher ee_state_pub;
-	ros::Publisher robot_state_pub;
-	ros::Publisher robot_vel_pub;
-	ros::Subscriber joint_state_sub;
-	ros::Subscriber mobile_platform_velocity_sub;
-	ros::Subscriber apriltag_detection_sub;
-	//ros::Subscriber yolo_detection_sub;
-	ros::Subscriber obstacles_detection_sub;
-	//ros::Subscriber realsense_intrinsic_matrix_sub;
-	tf::TransformListener listener;
+	ros::Publisher robotStatePublisher_;
+	ros::Publisher robotVelocityPublisher_;
+	ros::Subscriber jointStateSubscriber_;
+	ros::Subscriber mobilePlatformTwistSubscriber_;
+	ros::Subscriber apriltagDetectionSubscriber_;
+	ros::Subscriber obstaclesDetectionSubscriber_;
+	ros::Rate loopRate_;
+	
+	tf::TransformListener tfListener_;
 
-	bool desired_pose_is_global;
-	double starting_mobile_platform_position, desired_mobile_platform_position;
-
-	sensor_msgs::JointState current_joint_state;
-	geometry_msgs::Twist current_mobile_platform_velocity;
-	tf::StampedTransform initial_mobile_platform_pose;
-
-	bool apriltag_detected;
-	bool obstacles_detection_enable;
-
-	int callback_order;
+	/// 
+	sensor_msgs::JointState currentJointState_;
 
 	nav_msgs::Path des_ee_tra;
 	//rs2_intrinsics realsense_intrinsic_matrix;
+
+private:
+	/* ************************* *
+	 *       MPC functions       *
+	 * ************************* */
+
+	/**
+	 * @brief Populate the hessian matrix of the QP problem.
+	 * @note This function requires `Q_`, `R_`, and `mpcWindow_` to work properly. Make sure that
+	 * 		these class members are well declared and assigned values before invoking this function.
+	 * @note [About hessian matrix] The size of the hessian matrix is `7(w+1)+7w` by `7(w+1)+7w`, where
+	 *  `w` is the size of the preview window. The hessian matrix is formed as `diag(Q,...,Q,R,...,R)`.
+	*/
+	void castMPCToQPHessian();
+
+	/**
+	 * @brief Populate the gradient vector of the QP problem.
+	 * @note This function requires 
+	*/
+	int  castMPCToQPGradient();
+	void castMPCToQPConstraintMatrix();
+	void castMPCToQPConstraintVectors();
+
+	/// callback functions
+	void jointStateCB(const sensor_msgs::JointStateConstPtr& jointStatePtr);
+	void mobilePlatformTwistCB(const geometry_msgs::TwistConstPtr& twistPtr);
+	void apriltagDetectionCB(const apriltags_ros::AprilTagDetectionArrayConstPtr& detectionPtr);
+	void obstaclesDetectionCB(const std_msgs::Float64MultiArrayConstPtr& detectionPtr);
 };
 
 }	// namespace mpc
