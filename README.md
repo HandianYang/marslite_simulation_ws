@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Wed, Apr 17, 2024
+* Last update: Thu, Apr 18, 2024
 
 <!-- ## Prerequisites
 
@@ -28,7 +28,7 @@ Docker Hub helps you create, manage, and deliver your team's container applicati
 
 To utilize the simulator system, users are required to download my designed image. Run the following command to obtain the latest version of my Docker image (click [here](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to check the tagname):
 ```Shell
-docker pull handianyang/marslite_simulation:v1.1.2-MPC-Bugfix
+docker pull handianyang/marslite_simulation:v1.2.0-T265
 ```
 
 ### Enter the Docker container
@@ -45,7 +45,12 @@ Run the following command to enter the Docker container based on the latest tag 
 source docker_run.sh
 ```
 
-This command creates a DockeIf you've encountered any warnings or errors while building the workspace, please feel free to report an issue!
+This command creates a Docker container named `marslite` and guides you in.
+
+Specifically, the above bash script can be executed when you expect to:
+- launch a new container
+- enter a running container (when you work with multiple terminal windows)
+- restart an exited container (when you've left the container previously)
 
 #### (Optional) Enter a container with the specific image tag
 
@@ -62,6 +67,17 @@ source docker_run.sh 110
 This command creates a Docker container named `marslite_prev` and guides you in.
 
 **[Note]** If you work with parallel terminals, ALWAYS remember to include the `<tag_number>` right behind the command (`source docker_run.sh <tag_number>`) for EVERY terminal window.
+
+## Development
+
+### (Recommended) Use `tmux` interface
+
+After entering the container, simply type `tmux` to enter the tmux interface.
+```Shell
+tmux
+```
+
+For more `tmux` commands, please refer to the [tmux command cheat sheet](https://tmuxcheatsheet.com/).
 
 ### Build the ROS workspace
 
@@ -84,18 +100,18 @@ To let the changes of the workspace's environment variables take effect, remembe
 source ~/marslite_simulation_ws/devel/setup.bash
 ```
 
-Note that the command should be **executed in every terminal window**. Also you should change the pathname if you had placed the workspace directory at any other places.
+Note that the command should be **executed in every terminal window/tmux window**. Also you should change the pathname if you had placed the workspace directory at any other places.
 
-Since typing the same command into every terminal window is too trivial for multiple-terminal-window developers, we also offer an alias `sd` for this command:
+Or using the alias we provided to speed up your typing:
 ```Shell
 sd
 ### The above is the same as ...
 ###   `source ~/marslite_simulation_ws/devel/setup.bash`
-### The pathname should also be changed if necessary.
 ```
 
 From now on, you can begin your development! For detailed features and their corresponding commands, please refer to the **Instruction section** below.
 
+## Clear up
 
 ### Remove the Docker container
 
@@ -103,13 +119,13 @@ If you somehow mess up with the existing container (e.g. having trouble `apt-get
 
 Simply run the command **outside** the Docker container:
 ```Shell
-docker rm marslite  # for container based on latest tag
+docker rm marslite  # for container based on the latest tag
 ```
 where `marslite` is the default name of the container. 
 
 If your container was based on previous version, remember to change the container name to `marslite_prev`:
 ```Shell
-docker rm marslite_prev  # for container based on previous tag
+docker rm marslite_prev  # for container based on previous tags
 ```
 
 
