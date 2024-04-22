@@ -21,7 +21,6 @@
 
 #include <ros/ros.h>
 #include <cmath>
-// #include <iostream>
 #include <time.h>
 
 #include <sensor_msgs/JointState.h>
@@ -29,11 +28,18 @@
 #include <Eigen/Dense>              // eigen
 #include "OsqpEigen/OsqpEigen.h"    // osqp-eigen
 
+#include <actionlib/client/simple_action_client.h>
+#include <control_msgs/FollowJointTrajectoryAction.h>
+#include <trajectory_msgs/JointTrajectory.h>
+using JointTrajectoryAction = actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>;
+
+#include <experimental/optional>
+
 #include "marslite_properties/Arithmetics.h"
+#include "marslite_properties/Exceptions.h"
 #include "marslite_mpc/Constants.h"
 #include "marslite_mpc/Constraints.h"
 #include "marslite_mpc/Poses.h"
-
 
 /**
  * @namespace marslite operation namespace
@@ -45,8 +51,13 @@ namespace marslite {
 */
 namespace mpc {
 
+using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
+using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
+
 class ModelPredictiveControl {
 public:
+    using MPCClassPtr = std::shared_ptr<ModelPredictiveControl>;
+    
     explicit ModelPredictiveControl(const ros::NodeHandle& nh = ros::NodeHandle());
 
     /**
@@ -64,14 +75,27 @@ public:
     */
     bool solveQP();
 
+    /**
+     * @brief Return value of the `stopNode_` member.
+     * @return `FALSE` if everything is okay.
+    */
+    // bool getStopNodeFlag() const noexcept;
+
 private:
     /* ************************************ *
      *              ROS-related             *
      * ************************************ */
     ros::NodeHandle nh_;
     ros::Rate loopRate_;
+    ros::Duration signalTimeoutTimer_;      // timer that is activated when waiting some signals
+    ros::Duration maxTimeout_;              // maximum timeout before blocking
     
     ros::Subscriber robotStateSubscriber_;
+
+    /* ************************************ *
+     *               Messages               *
+     * ************************************ */
+    sensor_msgs::JointState robotState_;    // joint states of the mobile robot
 
     /* ************************************ *
      *            MPC parameters            *
@@ -98,17 +122,48 @@ private:
     OsqpEigen::Solver solver_;      // QP solver
 
     /* ************************************ *
+     *         Trajectory planning          *
+     * ************************************ */
+    std::shared_ptr<JointTrajectoryAction> actionClient_;   // `FollowJointTrajectoryAction` action client
+    control_msgs::FollowJointTrajectoryGoal trajectoryGoal_;          // the goal to be sent by action clients
+    trajectory_msgs::JointTrajectoryPoint trajectoryWaypoint_;
+
+    /* ************************************ *
      *                 Flags                *
      * ************************************ */
-    bool stopNode_;
+    // bool stopNode_;
+
 
 
 private:
+    /* ********************************************** *
+     *                 Initialization                 *
+     * ********************************************** */
+
     /**
-     * @brief Callback function for `joint_states` topic
-    */
-    void jointStateCB(const sensor_msgs::JointStateConstPtr& ptr);
-    
+     * @brief Subscribe to the robot state.
+     *
+     * This function subscribes to the robot state topic and receives updates
+     * whenever the robot state changes.
+     *
+     * @return True if the subscription was successful, false otherwise.
+     */
+    bool subscribeRobotState();
+
+    /**
+     * @brief Connect to the `FollowJointTrajectoryAction` Server.
+     * 
+     * This function establishes a connection with the FollowJointTrajectoryAction Server.
+     * 
+     * @return True if the connection is successful, false otherwise.
+     */
+    bool connectJointTrajectoryActionServer();
+
+
+    /* ********************************************** *
+     *                MPC/QP functions                *
+     * ********************************************** */
+
     /**
      * @brief Set dynamic matrices `A_` and `B_` for MPC problems.
      * 
@@ -145,18 +200,22 @@ private:
      * 
      * The size of the initial state spaces is `MPC_STATE_SIZE` by `1`.
      * 
+     * @param x0 The initial state space to be assigned (in type `Eigen::Matrix<double, MPC_STATE_SIZE, 1>`)
+     * 
      * @note The function requires `x0_` to be `Eigen::DiagonalMatrix` in `double` type.
     */
-    void setInitialStateSpace();
+    void setInitialStateSpace(const StateVector& x0 = ZERO_POSE);
 
     /**
      * @brief Set reference state space `xRef_` for MPC problems.
      * 
      * The size of the reference state spaces is `MPC_STATE_SIZE` by `1`.
      * 
+     * @param xRef The reference state space to be assigned (in type `Eigen::Matrix<double, MPC_STATE_SIZE, 1>`)
+     * 
      * @note The function requires `xRef_` to be `Eigen::DiagonalMatrix` in `double` type.
     */
-    void setReferenceStateSpace();
+    void setReferenceStateSpace(const StateVector& xRef = ZERO_POSE);
 
     /**
      * @brief Set hessian matrix from weight matrices `Q_` and `R_` for QP problems.
@@ -210,6 +269,25 @@ private:
      *  `castMPCToQPConstraintVectors()` function beforehand.
     */
     bool updateConstraintVectors();
+
+    /* ********************************************** *
+     *                Callback functions              *
+     * ********************************************** */
+
+    /**
+     * @brief Callback function for receiving robot state messages.
+     * 
+     * This function is called whenever a new robot state message is received.
+     * It takes a `sensor_msgs::JointState::ConstPtr` as input, which contains
+     * the joint state information of the robot.
+     * 
+     * @param msg The received robot state message.
+     * 
+     * @note This function is intended to be used as a callback for subscribing
+     * to robot state messages. Make sure to properly initialize the subscriber
+     * and set the appropriate topic to receive the messages.
+     */
+    void robotStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
 };
 
 } // namespace mpc

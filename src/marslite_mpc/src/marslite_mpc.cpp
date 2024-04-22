@@ -23,16 +23,28 @@ namespace marslite {
 namespace mpc {
 
 ModelPredictiveControl::ModelPredictiveControl(const ros::NodeHandle& nh)
-    : nh_(nh), loopRate_(MPC_SAMPLE_FREQ)
-{  
-    robotStateSubscriber_ = nh_.subscribe("/joint_states", 1, &ModelPredictiveControl::jointStateCB, this);
+    : nh_(nh), loopRate_(MPC_SAMPLE_FREQ), maxTimeout_(60)
+{
+    // Subscribe the `/joint_states` topic
+    if (!this->subscribeRobotState()) {
+        ROS_ERROR_STREAM("[MPC::MPC()] Error subscribing the `/joint_states` topic.");
+        throw marslite::ConstructorInitializationFailedException();
+    }
 
-    // Set MPC problem quantities
+    // Connect to the `FollowJointTrajectoryAction` action server
+    if (!this->connectJointTrajectoryActionServer()) {
+        ROS_ERROR_STREAM("[MPC::MPC()] Error connecting to the FollowJointTrajectoryAction action server.");
+        throw marslite::ConstructorInitializationFailedException();
+    }
+    trajectoryGoal_.trajectory.joint_names = {"tm_shoulder_1_joint", "tm_shoulder_2_joint", "tm_elbow_joint",
+                                    "tm_wrist_1_joint", "tm_wrist_2_joint", "tm_wrist_3_joint"};
+
+    // Set MPC characteristics
     this->setDynamicsMatrices();
     this->setInequalityConstraints();
     this->setWeightMatrices();
-    this->setInitialStateSpace();
-    this->setReferenceStateSpace();
+    this->setInitialStateSpace(MARSLITE_POSE_INITIAL);
+    this->setReferenceStateSpace(MARSLITE_POSE_DEFAULT1);
 
     // Cast the MPC problem as QP problem
     this->castMPCToQPHessian();
@@ -41,7 +53,10 @@ ModelPredictiveControl::ModelPredictiveControl(const ros::NodeHandle& nh)
     this->castMPCToQPConstraintVectors();
 
     // Initialize the QP solver
-    // stopNode_ = !this->QPSolverInitialization();
+    if (!this->initializeQPSolver()) {
+        ROS_ERROR_STREAM("[MPC::MPC()] Error initializing QP solver.");
+        throw marslite::ConstructorInitializationFailedException();
+    }
 }
 
 bool ModelPredictiveControl::initializeQPSolver()
@@ -70,34 +85,48 @@ bool ModelPredictiveControl::solveQP()
     Eigen::VectorXd QPSolution;     // QPSolution vector
     Eigen::VectorXd controlInput;   // control input vector
     timespec startTime, finishTime; // time record
+    size_t counter = 0;
 
     clock_gettime(CLOCK_REALTIME, &startTime);
     while (ros::ok()) {
         // Solve the QP problem
         if (solver_.solveProblem() != OsqpEigen::ErrorExitFlag::NoError) {
-            ROS_ERROR_STREAM("[ModelPredictiveControl::solveQP()] Unable to solve the problem.");
+            ROS_ERROR_STREAM("[MPC::solveQP()] Unable to solve the problem.");
             return false;
         }
 
         // Check if the solution is unfeasible
         if (solver_.getStatus() != OsqpEigen::Status::Solved) {
-            ROS_ERROR_STREAM("[ModelPredictiveControl::solveQP()] The solution is unfeasible.");
+            ROS_ERROR_STREAM("[MPC::solveQP()] The solution is unfeasible.");
             return false;
         }
 
+        // Obtain the solution, and append the new waypoint to the trajectory  (`trajectoryGoal_`)
         QPSolution = solver_.getSolution();
         controlInput = QPSolution.block(QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1);
+
+        trajectoryWaypoint_.positions = {x0_[0], x0_[1], x0_[2], x0_[3], x0_[4], x0_[5]};
+        trajectoryWaypoint_.velocities = {controlInput[0], controlInput[1], controlInput[2],
+                                            controlInput[3], controlInput[4], controlInput[5]};
+        trajectoryWaypoint_.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
+        trajectoryGoal_.trajectory.points.push_back(trajectoryWaypoint_);
+        
+        // Propagate the model
         x0_ = A_ * x0_ + B_ * controlInput;
 
+        // for (size_t i = 0; i < MPC_STATE_SIZE; ++i)
+        //     std::cout << x0_[i] << ' ';
+        // std::cout << std::endl;
+
         // Check if we reach the desired pose. If not, then continue solving the problem
-        if ((x0_ - xRef_).block<8, 1>(0, 0).norm() < MPC_ZERO) {
-            ROS_INFO_STREAM("[ModelPredictiveControl::solveQP()] Reach to the desired point!");
+        if ((x0_ - xRef_).norm() < MPC_ZERO) {
+            ROS_INFO_STREAM("[MPC::solveQP()] Reach to the desired point!");
             break;
         }
 
         // Update the constraint vectors
         if (!this->updateConstraintVectors()) {
-            ROS_ERROR_STREAM("[ModelPredictiveControl::solveQP()] Error updating the constraint vectors.");
+            ROS_ERROR_STREAM("[MPC::solveQP()] Error updating the constraint vectors.");
             return false;
         }
 
@@ -105,16 +134,80 @@ bool ModelPredictiveControl::solveQP()
         // loopRate_.sleep();
     }
     clock_gettime(CLOCK_REALTIME, &finishTime);
+    ROS_INFO_STREAM("[MPC::solveQP()] Time taken: " << marslite::time::getOperationTime(startTime, finishTime));
 
-    ROS_INFO_STREAM("[ModelPredictiveControl::solveQP()] Time taken: " << marslite::time::getOperationTime(startTime, finishTime));
+    // Send the trajectory goal to the server, and wait for the result
+    actionClient_->sendGoal(trajectoryGoal_);
+    actionClient_->waitForResult();
 
+    // Check if the action was successful
+    ROS_INFO_STREAM(actionClient_->getState().toString());
+    if (actionClient_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED) {
+        ROS_ERROR_STREAM("[MPC::solveQP()] Failed to execute the trajectory.");
+        return false;
+    }
+
+    ROS_INFO_STREAM("[MPC::solveQP()] Successfully Execute the trajectory!");
     return true;
 }
 
-void ModelPredictiveControl::jointStateCB(const sensor_msgs::JointStateConstPtr& ptr)
+// bool ModelPredictiveControl::getStopNodeFlag() const noexcept
+// {
+//     return stopNode_;
+// }
+
+/* ********************************************** *
+ *                 Initialization                 *
+ * ********************************************** */
+
+bool ModelPredictiveControl::subscribeRobotState()
 {
-    
+    // Subscribe the `/joint_states` topic
+    robotStateSubscriber_ = nh_.subscribe("/joint_states", 1, &ModelPredictiveControl::robotStateCallback, this);
+
+    // Wait for the publisher of the `/joint_states` topic
+    const ros::Duration timestep = ros::Duration(0.1);
+    signalTimeoutTimer_ = ros::Duration(0);
+    ROS_INFO_STREAM("[MPC::subscribeRobotState()] Waiting for subscribing the \"/joint_states\" topic...");
+    while (ros::ok() && robotStateSubscriber_.getNumPublishers() == 0 && signalTimeoutTimer_ < maxTimeout_) {
+        // Check subscription every 0.1 seconds
+        signalTimeoutTimer_ += timestep;
+        timestep.sleep();
+    }
+
+    if (signalTimeoutTimer_ >= maxTimeout_) {
+        // [Error] Reach the timeout
+        ROS_ERROR_STREAM("[MPC::subscribeRobotState()] Timeout (" << maxTimeout_ << " seconds) reached while"
+                        << " waiting for subscribing the \"/joint_states\" topic.");
+        return false;
+    }
+
+    ROS_INFO_STREAM("[MPC::subscribeRobotState()] Successfully subscribing the \"/joint_states\" topic!");
+    return true;
 }
+
+bool ModelPredictiveControl::connectJointTrajectoryActionServer()
+{
+    // Initialize the `FollowJointTrajectoryAction` action client
+    actionClient_ = std::make_shared<JointTrajectoryAction>("/arm_controller/follow_joint_trajectory", true);
+
+    // Wait for the connection to the server
+    ROS_INFO_STREAM("[MPC::connectJointTrajectoryActionServer()] Waiting for"
+                        << " connecting the FollowJointTrajectoryAction action server...");
+    if (!actionClient_->waitForServer(maxTimeout_)) {
+        ROS_ERROR_STREAM("[MPC::connectJointTrajectoryActionServer()] Timeout (" << maxTimeout_ << " seconds) reached while"
+                        << " waiting for FollowJointTrajectoryAction action server.");
+        return false;
+    }
+
+    ROS_INFO_STREAM("[MPC::connectJointTrajectoryActionServer()] Successfully connecting the"
+                        << " FollowJointTrajectoryAction action server!");
+    return true;
+}
+
+/* ********************************************** *
+ *                MPC/QP functions                *
+ * ********************************************** */
 
 void ModelPredictiveControl::setDynamicsMatrices()
 {
@@ -139,12 +232,12 @@ void ModelPredictiveControl::setDynamicsMatrices()
 
 void ModelPredictiveControl::setInequalityConstraints()
 {
-    xMax_ << MPC_LIMIT_MARSLITE_POSITION_MAX;
-    xMin_ << MPC_LIMIT_MARSLITE_POSITION_MIN;
-    uMax_ << MPC_LIMIT_MARSLITE_VELOCITY_MAX;
-    uMin_ << MPC_LIMIT_MARSLITE_VELOCITY_MIN;
-    aMax_ << MPC_LIMIT_MARSLITE_ACCELERATION_MAX;
-    aMin_ << MPC_LIMIT_MARSLITE_ACCELERATION_MIN;
+    xMax_ = MPC_LIMIT_MARSLITE_POSITION_MAX;
+    xMin_ = MPC_LIMIT_MARSLITE_POSITION_MIN;
+    uMax_ = MPC_LIMIT_MARSLITE_VELOCITY_MAX;
+    uMin_ = MPC_LIMIT_MARSLITE_VELOCITY_MIN;
+    aMax_ = MPC_LIMIT_MARSLITE_ACCELERATION_MAX;
+    aMin_ = MPC_LIMIT_MARSLITE_ACCELERATION_MIN;
 }
 
 void ModelPredictiveControl::setWeightMatrices()
@@ -153,14 +246,14 @@ void ModelPredictiveControl::setWeightMatrices()
     R_.diagonal() << 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
 }
 
-void ModelPredictiveControl::setInitialStateSpace()
+void ModelPredictiveControl::setInitialStateSpace(const StateVector& x0)
 {
-    x0_ << MARSLITE_POSE_INITIAL;
+    x0_ = x0;
 }
 
-void ModelPredictiveControl::setReferenceStateSpace()
+void ModelPredictiveControl::setReferenceStateSpace(const StateVector& xRef)
 {
-    xRef_ << MARSLITE_POSE_DEFAULT1;
+    xRef_ = xRef;
 }
 
 void ModelPredictiveControl::castMPCToQPHessian()
@@ -214,7 +307,7 @@ void ModelPredictiveControl::castMPCToQPConstraintMatrix()
         for (int j = 0; j < MPC_STATE_SIZE; ++j) {
             for (int k = 0; k < MPC_INPUT_SIZE; ++k) {
                 value = B_(j,k);
-                if(value != 0)
+                if (value != 0)
                     constraintMatrix_.insert(MPC_STATE_SIZE * (i+1) + j, MPC_INPUT_SIZE * i + k + QP_DYNAMIC_SIZE) = value;
             }
         }
@@ -225,11 +318,11 @@ void ModelPredictiveControl::castMPCToQPConstraintMatrix()
     }
 
     for (int i = 0; i < MPC_INPUT_SIZE * MPC_WINDOW_SIZE; ++i) {
-        constraintMatrix_.insert(i + (QP_BOUND_SIZE - QP_CONTROL_SIZE), i + QP_DYNAMIC_SIZE) = MPC_SAMPLE_FREQ;
+        constraintMatrix_.insert(i + 2 * QP_DYNAMIC_SIZE + QP_CONTROL_SIZE, i + QP_DYNAMIC_SIZE) = MPC_SAMPLE_FREQ;
     }
 
     for (int i = 0; i < MPC_INPUT_SIZE * (MPC_WINDOW_SIZE-1); ++i) {
-        constraintMatrix_.insert(i + (QP_BOUND_SIZE - QP_CONTROL_SIZE + MPC_INPUT_SIZE), i + QP_DYNAMIC_SIZE) = -MPC_SAMPLE_FREQ;
+        constraintMatrix_.insert(i + 2 * QP_DYNAMIC_SIZE + QP_CONTROL_SIZE + MPC_INPUT_SIZE, i + QP_DYNAMIC_SIZE) = -MPC_SAMPLE_FREQ;
     }
 }
 
@@ -272,6 +365,15 @@ bool ModelPredictiveControl::updateConstraintVectors()
     if (!solver_.updateBounds(lowerBound_, upperBound_)) return false;
 
     return true;
+}
+
+/* ********************************************** *
+ *                Callback functions              *
+ * ********************************************** */
+
+void ModelPredictiveControl::robotStateCallback(const sensor_msgs::JointState::ConstPtr& msg)
+{
+    robotState_ = *msg;
 }
 
 } // namespace mpc

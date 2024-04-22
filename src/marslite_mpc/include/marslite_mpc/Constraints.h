@@ -36,6 +36,9 @@ namespace marslite {
 */
 namespace mpc {
 
+using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
+using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
+
 // state upper constraint vector with no limits
 static const StateVector MPC_LIMIT_STATE_FREE_MAX = (
     StateVector() << OsqpEigen::INFTY, 
@@ -99,7 +102,7 @@ static const StateVector MPC_LIMIT_MARSLITE_POSITION_MAX = (
 // lower constraint vector of marslite's joint position 
 static const StateVector MPC_LIMIT_MARSLITE_POSITION_MIN = (
     StateVector() << deg2Rad(-115),
-                     deg2Rad(-42),
+                     deg2Rad(-43),
                      deg2Rad(-153),
                      deg2Rad(-190),
                      deg2Rad(-178),

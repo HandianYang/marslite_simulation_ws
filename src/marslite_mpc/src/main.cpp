@@ -19,15 +19,22 @@
 #include <ros/ros.h>
 
 #include "marslite_mpc/marslite_mpc.h"
-using MPC = marslite::mpc::ModelPredictiveControl;
+using marslite::mpc::ModelPredictiveControl;
+
+#include "marslite_properties/Exceptions.h"
+using marslite::ConstructorInitializationFailedException;
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "mpc");
 
-    std::shared_ptr<MPC> classPtr = std::make_shared<MPC>();
-    ROS_ASSERT(classPtr->initializeQPSolver());
-    ROS_ASSERT(classPtr->solveQP());
+    ModelPredictiveControl::MPCClassPtr mpcClassPtr;
+    try {
+        mpcClassPtr = std::make_shared<ModelPredictiveControl>();
+        ROS_ASSERT(mpcClassPtr->solveQP());
+    } catch (const ConstructorInitializationFailedException& ex) {
+        ROS_ERROR_STREAM(ex.what());
+    }
 
     return 0;
 }

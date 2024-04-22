@@ -11,18 +11,22 @@ project(marslite_mpc)
 # Find catkin packages and libraries for catkin and system dependencies
 ################################################################################
 find_package(catkin REQUIRED COMPONENTS
-  apriltags_ros
-  detection_msgs
+  # actionlib_msgs
+  actionlib
+  # apriltags_ros
+  control_msgs
+  # detection_msgs
   geometry_msgs
-  message_filters
-  nav_msgs
-  pcl_conversions
-  pcl_ros
+  # message_filters
+  # nav_msgs
+  # pcl_conversions
+  # pcl_ros
   roscpp
   rospy
-  std_msgs
   sensor_msgs
-  tf
+  # std_msgs
+  # tf
+  trajectory_msgs
 )
 
 find_package(OsqpEigen)
@@ -49,21 +53,24 @@ find_package(Eigen3)
 
 catkin_package(
   CATKIN_DEPENDS
-    apriltags_ros
-    detection_msgs
+    actionlib
+    # apriltags_ros
+    control_msgs
+    # detection_msgs
     geometry_msgs
-    message_filters
-    nav_msgs
-    pcl_conversions
-    pcl_ros
+    # message_filters
+    # nav_msgs
+    # pcl_conversions
+    # pcl_ros
     roscpp
     rospy
-    std_msgs
     sensor_msgs
-    tf
+    # std_msgs
+    # tf
+    trajectory_msgs
   LIBRARIES
-    mpc
-    tm700_kin
+    mpc_lib
+    tm700_kin_lib
   INCLUDE_DIRS include
 )
 
@@ -79,14 +86,20 @@ include_directories(
 
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
-add_library(tm700_kin src/tm_kin.cpp)
-set_target_properties(tm700_kin PROPERTIES COMPILE_DEFINITIONS "TM700_DH_PARAMS")
+add_library(tm700_kin_lib src/tm_kin.cpp)
+set_target_properties(tm700_kin_lib PROPERTIES COMPILE_DEFINITIONS "TM700_DH_PARAMS")
 
-add_library(mpc src/marslite_mpc.cpp)
-target_link_libraries(mpc ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin)
+add_library(mpc_lib src/marslite_mpc.cpp)
+target_link_libraries(mpc_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib)
 
-add_executable(main src/main.cpp)
-target_link_libraries(main ${catkin_LIBRARIES} mpc)
+add_executable(mpc src/main.cpp)
+target_link_libraries(mpc ${catkin_LIBRARIES} mpc_lib)
+
+# add_executable(trajectory_planner src/trajectory_planner_node.cpp)
+# target_link_libraries(trajectory_planner ${catkin_LIBRARIES})
+
+# add_executable(MPCExample src/MPCExample.cpp)
+# target_link_libraries(MPCExample ${catkin_LIBRARIES} OsqpEigen::OsqpEigen)
 
 ################################################################################
 # Install
@@ -103,7 +116,9 @@ install(TARGETS
 )
 
 install(TARGETS
-    main
+    mpc
+    # trajectory_planner
+    # MPCExample
     # tm700_kin
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

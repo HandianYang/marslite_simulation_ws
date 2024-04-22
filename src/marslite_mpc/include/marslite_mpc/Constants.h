@@ -31,9 +31,9 @@ namespace marslite {
 */
 namespace mpc {
 
-static constexpr double MPC_ZERO = 5e-03;    // distance that below this value would be treated as 0
-static constexpr uint64_t MPC_SAMPLE_FREQ = 25;
-static constexpr double MPC_SAMPLE_TIME = 1./MPC_SAMPLE_FREQ;
+static const double MPC_ZERO = 1e-05;    // distance that below this value would be treated as 0
+static const double MPC_SAMPLE_FREQ = 25;
+static const double MPC_SAMPLE_TIME = 1./MPC_SAMPLE_FREQ;
 
 enum MPCConstants : uint64_t {
     MPC_STATE_SIZE  = 8,    // size of the state vector in MPC (or `SS` for short)
@@ -50,9 +50,6 @@ enum QPConstants : uint64_t {
     QP_EQUALITY_SIZE    = QP_DYNAMIC_SIZE,                          // `SS` * (`W` + 1)
     QP_BOUND_SIZE       = QP_DYNAMIC_SIZE*2 + QP_CONTROL_SIZE*2     // 2 * `SS` * (`W` + 1) + 2 * `IS` * `W`
 };
-
-using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
-using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
 
 } // namespace mpc
 

@@ -59,6 +59,7 @@ namespace math {
 
 /**
  * @brief Generate a vector of evenly spaced points between `begin` and `end`.
+ * @tparam dataT the type of the data
  * @param begin the first element of vector
  * @param end the last element of vector
  * @param number the number of the elements
@@ -82,6 +83,7 @@ static std::vector<dataT> linspace(const dataT& begin, const dataT& end, const s
 
 /**
  * @brief Calculate the definite integral of func(x)
+ * @tparam dataT the type of the data
  * @param x the domain of the function
  * @param func the codomain of the function
  * @return the definite integral result
@@ -103,16 +105,32 @@ static dataT integral(const std::vector<dataT>& x, const std::vector<dataT>& fun
     return result;
 }
 
-template <class dataT>
-static inline bool reachZero(const dataT& num) {
+/**
+ * @brief Determine whether the floating number should be treated as 0.
+ * @param num the number to be determined
+ * @return `TRUE` if the number is close to 0
+*/
+static inline bool reachZero(const double& num) {
     return (num >= -1e-06) && (num <= 1e-06);
 }
 
+/**
+ * @brief Convert from degree to radian
+ * @tparam dataT the data type of the number
+ * @param deg angle in degree
+ * @return angle in radian
+*/
 template <class dataT>
 static inline double deg2Rad(const dataT& deg) {
     return deg / 180. * M_PI;
 }
 
+/**
+ * @brief Convert from radian to degree
+ * @tparam dataT the data type of the number
+ * @param rad angle in radian
+ * @return angle in degree
+*/
 template <class dataT>
 static inline double rad2Deg(const dataT& rad) {
     return rad * 180. / M_PI;

@@ -36,6 +36,10 @@ namespace marslite {
 */
 namespace mpc {
 
+static const StateVector ZERO_POSE = (
+    StateVector() << 0., 0., 0., 0., 0., 0., 0., 0.
+).finished();
+
 static const StateVector MARSLITE_POSE_INITIAL = (
     StateVector() << deg2Rad(0),
                      deg2Rad(-42),
