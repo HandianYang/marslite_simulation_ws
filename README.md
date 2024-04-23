@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Mon, Apr 22, 2024
+* Last update: Tue, Apr 23, 2024
 
 <!-- ## Prerequisites
 
@@ -81,35 +81,28 @@ For more `tmux` commands, please refer to the [tmux command cheat sheet](https:/
 
 ### Build the ROS workspace
 
-After entering the Docker container, directly build the ROS workspace using `catkin_make` under the root directory of `marslite_simulation_ws` workspace:
+Under the root of the `marslite_simulation_ws` directory:
+
 ```Shell
 catkin_make
 ```
 
-Or using the alias we provided to speed up your typing:
+(Optional) the alias:
 ```Shell
 cm
-### The above is the same as ...
-###   catkin_make
 ```
 
-### Source the workspace bash script
+### Source the ROS workspace bash script
 
-To let the changes of the workspace's environment variables take effect, remember to source the workspace bash script:
+For **EVERY** parallel terminal window, under **ANY** directory:
 ```Shell
 source ~/marslite_simulation_ws/devel/setup.bash
 ```
 
-Note that the command should be **executed in every terminal window/tmux window**. Also you should change the pathname if you had placed the workspace directory at any other places.
-
-Or using the alias we provided to speed up your typing:
+(Optional) the alias:
 ```Shell
 sd
-### The above is the same as ...
-###   `source ~/marslite_simulation_ws/devel/setup.bash`
 ```
-
-From now on, you can begin your development! For detailed features and their corresponding commands, please refer to the **Instruction section** below.
 
 ## Clear up
 
@@ -202,31 +195,35 @@ roslaunch marslite_navigation shared_control_joystick.launch
 
 ### Robotic arm control
 
-1. default Moveit! control interface
+1. Launch the Moveit! control interface
 ```Shell
 roslaunch mars_lite_moveit_config mars_lite_moveit_planning_execution_gz.launch
+```
+
+2. **(Under development)** Trajectory planning using MPC model
+```Shell
+rosrun marslite_mpc mpc
 ```
 
 
 ## Known issues
 
-### System-related
+### Build-related
 
 #### Warnings
-- CMake warning: `Eigen` is deprecated
-- Build warning: `_bool OsqpEigen::Solver::solve()_` is deprecated
+- `Eigen` is deprecated
 
 ### Robot-related
 
 #### Errors
 - **"No p gain specified for pid. Namespace: /gazebo_ros_control/pid_gains/..."**
 
-#### warnings
-- **"TF_REPEATED_DATA ignoring data with redundant timestamp..."**
+<!-- #### warnings
+- **"TF_REPEATED_DATA ignoring data with redundant timestamp..."** -->
 
 
-### Gazebo-related
+<!-- ### Gazebo-related
 
 #### errors
 - Press "Reset model pose" would result in unexpected force applied on the marslite.
-- Node::Advertise(): Error advertising topic [/shelf_01_0/joint_cmd]. Did you forget to start the discovery service? [Err] [JointControlWidget.cc:393] Error advertising topic [/room_01/joint_cmd]
+- Node::Advertise(): Error advertising topic [/shelf_01_0/joint_cmd]. Did you forget to start the discovery service? [Err] [JointControlWidget.cc:393] Error advertising topic [/room_01/joint_cmd] -->

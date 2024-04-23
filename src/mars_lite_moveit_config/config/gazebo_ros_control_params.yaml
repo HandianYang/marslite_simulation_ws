@@ -1,0 +1,11 @@
+/gazebo_ros_control:
+  pid_gains:
+    tm_shoulder_1_joint:  {p: 1000, i: 1, d: 100}
+    tm_shoulder_2_joint:  {p: 1000, i: 1, d: 100}
+    tm_elbow_joint:       {p: 1000, i: 1, d: 100}
+    tm_wrist_1_joint:     {p: 1000, i: 1, d: 100}
+    tm_wrist_2_joint:     {p: 1000, i: 1, d: 100}
+    tm_wrist_3_joint:     {p: 1000, i: 1, d: 100}
+    robotiq_85_left_knuckle_joint: {p: 1000, i: 1, d: 100}
+    # {p: 1, i: 0, d: 1}
+    # {p: 1000, i: 0.1, d: 100}
