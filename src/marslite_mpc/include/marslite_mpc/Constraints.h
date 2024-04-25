@@ -23,6 +23,11 @@
 #include "OsqpEigen/OsqpEigen.h"
 
 #include "marslite_mpc/Constants.h"
+using marslite::mpc::MPC_STATE_SIZE;
+using marslite::mpc::MPC_INPUT_SIZE;
+using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
+using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
+
 #include "marslite_properties/Arithmetics.h"
 using marslite::math::deg2Rad;
 
@@ -34,13 +39,10 @@ namespace marslite {
 /**
  * @namespace MPC namespace for marslite robots. Relationship: `marslite`::`MPC`
 */
-namespace mpc {
-
-using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
-using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
+namespace constraints {
 
 // state upper constraint vector with no limits
-static const StateVector MPC_LIMIT_STATE_FREE_MAX = (
+static const StateVector STATE_FREE_LIMIT_MAX = (
     StateVector() << OsqpEigen::INFTY, 
                      OsqpEigen::INFTY,
                      OsqpEigen::INFTY,
@@ -52,7 +54,7 @@ static const StateVector MPC_LIMIT_STATE_FREE_MAX = (
 ).finished();
 
 // state lower constraint vector with no limits
-static const StateVector MPC_LIMIT_STATE_FREE_MIN = (
+static const StateVector STATE_FREE_LIMIT_MIN = (
     StateVector() << -OsqpEigen::INFTY, 
                      -OsqpEigen::INFTY,
                      -OsqpEigen::INFTY,
@@ -64,7 +66,7 @@ static const StateVector MPC_LIMIT_STATE_FREE_MIN = (
 ).finished();
 
 // input upper constraint vector with no limits
-static const InputVector MPC_LIMIT_INPUT_FREE_MAX = (
+static const InputVector INPUT_FREE_LIMIT_MAX = (
     InputVector() << OsqpEigen::INFTY, 
                      OsqpEigen::INFTY,
                      OsqpEigen::INFTY,
@@ -76,7 +78,7 @@ static const InputVector MPC_LIMIT_INPUT_FREE_MAX = (
 ).finished();
 
 // input lower constraint vector with no limits
-static const InputVector MPC_LIMIT_INPUT_FREE_MIN = (
+static const InputVector INPUT_FREE_LIMIT_MIN = (
     InputVector() << -OsqpEigen::INFTY, 
                      -OsqpEigen::INFTY,
                      -OsqpEigen::INFTY,
@@ -88,7 +90,7 @@ static const InputVector MPC_LIMIT_INPUT_FREE_MIN = (
 ).finished();
 
 // upper constraint vector of marslite's joint position 
-static const StateVector MPC_LIMIT_MARSLITE_POSITION_MAX = (
+static const StateVector MARSLITE_POSITION_LIMIT_MAX = (
     StateVector() << deg2Rad(130),
                      deg2Rad(125),
                      deg2Rad(153),
@@ -100,7 +102,7 @@ static const StateVector MPC_LIMIT_MARSLITE_POSITION_MAX = (
 ).finished();
 
 // lower constraint vector of marslite's joint position 
-static const StateVector MPC_LIMIT_MARSLITE_POSITION_MIN = (
+static const StateVector MARSLITE_POSITION_LIMIT_MIN = (
     StateVector() << deg2Rad(-115),
                      deg2Rad(-43),
                      deg2Rad(-153),
@@ -112,7 +114,7 @@ static const StateVector MPC_LIMIT_MARSLITE_POSITION_MIN = (
 ).finished();
 
 // upper constraint vector of marslite's joint velocity
-static const InputVector MPC_LIMIT_MARSLITE_VELOCITY_MAX = (
+static const InputVector MARSLITE_VELOCITY_LIMIT_MAX = (
     InputVector() << deg2Rad(180),
                      deg2Rad(180),
                      deg2Rad(180),
@@ -124,7 +126,7 @@ static const InputVector MPC_LIMIT_MARSLITE_VELOCITY_MAX = (
 ).finished();
 
 // lower constraint vector of marslite's joint velocity
-static const InputVector MPC_LIMIT_MARSLITE_VELOCITY_MIN = (
+static const InputVector MARSLITE_VELOCITY_LIMIT_MIN = (
     InputVector() << deg2Rad(-180),
                      deg2Rad(-180),
                      deg2Rad(-180),
@@ -136,7 +138,7 @@ static const InputVector MPC_LIMIT_MARSLITE_VELOCITY_MIN = (
 ).finished();
 
 // upper constraint vector of marslite's joint acceleration
-static const InputVector MPC_LIMIT_MARSLITE_ACCELERATION_MAX = (
+static const InputVector MARSLITE_ACCELERATION_LIMIT_MAX = (
     InputVector() << OsqpEigen::INFTY, 
                      OsqpEigen::INFTY,
                      OsqpEigen::INFTY,
@@ -148,7 +150,7 @@ static const InputVector MPC_LIMIT_MARSLITE_ACCELERATION_MAX = (
 ).finished();
 
 // lower constraint vector of marslite's joint acceleration
-static const InputVector MPC_LIMIT_MARSLITE_ACCELERATION_MIN = (
+static const InputVector MARSLITE_ACCELERATION_LIMIT_MIN = (
     InputVector() << -OsqpEigen::INFTY, 
                      -OsqpEigen::INFTY,
                      -OsqpEigen::INFTY,

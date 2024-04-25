@@ -20,9 +20,13 @@
 #define MARSLITE_MPC_POSES_H_
 
 #include <Eigen/Dense>
-#include "OsqpEigen/OsqpEigen.h"
 
 #include "marslite_mpc/Constants.h"
+using marslite::mpc::MPC_STATE_SIZE;
+using marslite::mpc::MPC_INPUT_SIZE;
+using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
+using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
+
 #include "marslite_properties/Arithmetics.h"
 using marslite::math::deg2Rad;
 
@@ -34,13 +38,13 @@ namespace marslite {
 /**
  * @namespace MPC namespace for marslite robots. Relationship: `marslite`::`mpc`
 */
-namespace mpc {
+namespace poses {
 
-static const StateVector ZERO_POSE = (
+static const StateVector MARSLITE_POSE_INITIAL = (
     StateVector() << 0., 0., 0., 0., 0., 0., 0., 0.
 ).finished();
 
-static const StateVector MARSLITE_POSE_INITIAL = (
+static const StateVector MARSLITE_POSE_HOME = (
     StateVector() << deg2Rad(0),
                      deg2Rad(-42),
                      deg2Rad(113),

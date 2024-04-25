@@ -92,8 +92,8 @@ set_target_properties(tm700_kin_lib PROPERTIES COMPILE_DEFINITIONS "TM700_DH_PAR
 add_library(mpc_lib src/marslite_mpc.cpp)
 target_link_libraries(mpc_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib)
 
-add_executable(mpc src/main.cpp)
-target_link_libraries(mpc ${catkin_LIBRARIES} mpc_lib)
+add_executable(test_default_pose_planning test/test_default_pose_planning.cpp)
+target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} mpc_lib)
 
 # add_executable(trajectory_planner src/trajectory_planner_node.cpp)
 # target_link_libraries(trajectory_planner ${catkin_LIBRARIES})
@@ -116,7 +116,7 @@ install(TARGETS
 )
 
 install(TARGETS
-    mpc
+    # marslite_mpc
     # trajectory_planner
     # MPCExample
     # tm700_kin
@@ -128,3 +128,11 @@ install(TARGETS
 ################################################################################
 # Test
 ################################################################################
+
+# if(CATKIN_ENABLE_TESTING)
+#   find_package(rostest REQUIRED)
+#   add_rostest_gtest(test_default_pose_planning
+#     launch/testDefaultPosePlanning.test
+#     test/testDefaultPosePlanning.cpp)
+#   target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} mpc_lib)
+# endif()

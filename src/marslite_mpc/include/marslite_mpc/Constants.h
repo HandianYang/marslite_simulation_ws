@@ -31,7 +31,7 @@ namespace marslite {
 */
 namespace mpc {
 
-static const double MPC_ZERO = 1e-05;    // distance that below this value would be treated as 0
+static const double MPC_ZERO = 1e-04;    // distance that below this value would be treated as 0
 static const double MPC_SAMPLE_FREQ = 25;
 static const double MPC_SAMPLE_TIME = 1./MPC_SAMPLE_FREQ;
 

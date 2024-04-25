@@ -31,9 +31,6 @@
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <trajectory_msgs/JointTrajectory.h>
-using JointTrajectoryAction = actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>;
-
-#include <experimental/optional>
 
 #include "marslite_properties/Arithmetics.h"
 #include "marslite_properties/Exceptions.h"
@@ -46,40 +43,56 @@ using JointTrajectoryAction = actionlib::SimpleActionClient<control_msgs::Follow
 */
 namespace marslite {
 
+using exceptions::TimeOutException;
+using exceptions::ConstructorInitializationFailedException;
+
 /**
  * @namespace MPC namespace for marslite robots. Relationship: `marslite`::`mpc`
 */
 namespace mpc {
 
-using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
-using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
-
 class ModelPredictiveControl {
 public:
     using MPCClassPtr = std::shared_ptr<ModelPredictiveControl>;
+
+    using JointTrajectoryAction = actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>;
+    using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
+    using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
     
+    /**
+     * @brief Constructor for the MPC controller.
+     * 
+     * This constructor initializes the MPC controller with the given `ros::NodeHandle`.
+     *
+     * @param nh The `ros::NodeHandle` to be used by the MPC controller.
+     * @throw `marslite::exceptions::ConstructorInitializationFailedException` if the constructor fails to initialize.
+     */
     explicit ModelPredictiveControl(const ros::NodeHandle& nh = ros::NodeHandle());
 
     /**
+     * @brief Sets the target pose for the MPC controller.
+     *
+     * This function sets the target pose for the MPC controller. The target pose is represented
+     * by a matrix of size MPC_STATE_SIZE x 1, where MPC_STATE_SIZE is the size of the state vector.
+     *
+     * @param targetPose The target pose vector.
+     */
+    void setTargetPose(const StateVector& targetPose = marslite::poses::MARSLITE_POSE_INITIAL);
+
+    /**
      * @brief Initialize the QP solver.
-     * @return `TRUE` if the QP solver is successfully initialized.
+     * @return True if the QP solver is successfully initialized.
      * @note DO NOT try to use QP solver if this function returns `FALSE`.
     */
     bool initializeQPSolver();
 
     /**
-     * @brief Solve the given QP problem.
-     * @return `TRUE` if the solution of the QP problem is found.
+     * @brief Plan the trajectory of the robot using QP solver.
+     * @return True if the trajectory can be executed, and it is executed successfully.
      * @note ALWAYS remember to initialize the QP solver by invoking `QPSolverInitialization()`
      *  function before solving the problem.
     */
-    bool solveQP();
-
-    /**
-     * @brief Return value of the `stopNode_` member.
-     * @return `FALSE` if everything is okay.
-    */
-    // bool getStopNodeFlag() const noexcept;
+    bool trajectoryPlanningQPSolver();
 
 private:
     /* ************************************ *
@@ -102,13 +115,13 @@ private:
      * ************************************ */
     Eigen::Matrix<double, MPC_STATE_SIZE, MPC_STATE_SIZE> A_;   // dynamic matrix
     Eigen::Matrix<double, MPC_STATE_SIZE, MPC_INPUT_SIZE> B_;   // control matrix
-    Eigen::Matrix<double, MPC_STATE_SIZE, 1> xMax_, xMin_;      // state inequality constraints
-    Eigen::Matrix<double, MPC_INPUT_SIZE, 1> uMax_, uMin_;      // input inequality constraints
-    Eigen::Matrix<double, MPC_INPUT_SIZE, 1> aMax_, aMin_;      // input inequality constraints
+    StateVector xMax_, xMin_;      // state inequality constraints
+    InputVector uMax_, uMin_;      // input inequality constraints
+    InputVector aMax_, aMin_;      // input inequality constraints
     Eigen::DiagonalMatrix<double, MPC_STATE_SIZE> Q_;           // weight matrix for state vectors
     Eigen::DiagonalMatrix<double, MPC_INPUT_SIZE> R_;           // weight matrix for input vectors
-    Eigen::Matrix<double, MPC_STATE_SIZE, 1> x0_;               // initial state space
-    Eigen::Matrix<double, MPC_STATE_SIZE, 1> xRef_;             // reference state space
+    StateVector x0_;               // initial state space
+    StateVector xRef_;             // reference state space
     
     /* ************************************ *
      *            QP parameters             *
@@ -129,11 +142,9 @@ private:
     trajectory_msgs::JointTrajectoryPoint trajectoryWaypoint_;
 
     /* ************************************ *
-     *                 Flags                *
+     *                 Mutex                *
      * ************************************ */
-    // bool stopNode_;
-
-
+    std::mutex robotStateMutex_;
 
 private:
     /* ********************************************** *
@@ -141,23 +152,25 @@ private:
      * ********************************************** */
 
     /**
-     * @brief Subscribe to the robot state.
-     *
-     * This function subscribes to the robot state topic and receives updates
-     * whenever the robot state changes.
-     *
-     * @return True if the subscription was successful, false otherwise.
+     * @brief Subscribes to the robot state topic.
+     * 
+     * This function sets up a subscription to the robot state topic, allowing the
+     * program to receive updates on the current state of the robot.
+     * 
+     * @note Make sure to call this function before attempting to use the robot state.
+     * @throw `marslite::exceptions::TimeOutException` if the subscription is not successful within the timeout.
      */
-    bool subscribeRobotState();
+    void subscribeRobotState();
 
     /**
      * @brief Connect to the `FollowJointTrajectoryAction` Server.
      * 
      * This function establishes a connection with the FollowJointTrajectoryAction Server.
      * 
-     * @return True if the connection is successful, false otherwise.
+     * @note Make sure to call this function before attempting to send trajectory goals.
+     * @throw `marslite::exceptions::TimeOutException` if the connection is not successful within the timeout.
      */
-    bool connectJointTrajectoryActionServer();
+    void connectJointTrajectoryActionServer();
 
 
     /* ********************************************** *
@@ -194,28 +207,6 @@ private:
      * @note The function requires `Q_` and `R_` to be `Eigen::Matrix` in `double` type.
     */
     void setWeightMatrices();
-
-    /**
-     * @brief Set initial state space `x0_` for MPC problems.
-     * 
-     * The size of the initial state spaces is `MPC_STATE_SIZE` by `1`.
-     * 
-     * @param x0 The initial state space to be assigned (in type `Eigen::Matrix<double, MPC_STATE_SIZE, 1>`)
-     * 
-     * @note The function requires `x0_` to be `Eigen::DiagonalMatrix` in `double` type.
-    */
-    void setInitialStateSpace(const StateVector& x0 = ZERO_POSE);
-
-    /**
-     * @brief Set reference state space `xRef_` for MPC problems.
-     * 
-     * The size of the reference state spaces is `MPC_STATE_SIZE` by `1`.
-     * 
-     * @param xRef The reference state space to be assigned (in type `Eigen::Matrix<double, MPC_STATE_SIZE, 1>`)
-     * 
-     * @note The function requires `xRef_` to be `Eigen::DiagonalMatrix` in `double` type.
-    */
-    void setReferenceStateSpace(const StateVector& xRef = ZERO_POSE);
 
     /**
      * @brief Set hessian matrix from weight matrices `Q_` and `R_` for QP problems.
@@ -262,13 +253,38 @@ private:
     void castMPCToQPConstraintVectors();
 
     /**
-     * @brief Update constraint vectors after each iteration.
+     * @brief Updates the initial state from the robot state.
      * 
-     * @note The function requires constraint vectors `lowerBound_` and `upperBound_` to be
-     *  properly initialized and assigned values. Make sure to invoke the
-     *  `castMPCToQPConstraintVectors()` function beforehand.
-    */
-    bool updateConstraintVectors();
+     * This function is responsible for updating the initial state of the robot based on the current robot state.
+     * It performs the necessary calculations and updates the internal state variables accordingly.
+     * 
+     * @note This function should be called before solving the MPC problem.
+     * @throw `marslite::exceptions::TimeOutException` if the robot state is not received within the timeout.
+     */
+    void updateInitialStateFromRobotState();
+
+    /**
+     * @brief Updates the gradient.
+     *
+     * This function updates the gradient using the provided reference state vector.
+     * If no reference state vector is provided, it uses a zero vector as the reference.
+     *
+     * @param xRef The reference state vector (default: zero vector).
+     * @return True if the gradient was successfully updated, false otherwise.
+     */
+    bool updateGradient(const StateVector& xRef = StateVector::Zero());
+
+
+    /**
+     * @brief Updates the constraint vectors.
+     *
+     * This function updates the constraint vectors based on the given state vector.
+     *
+     * @param x The state vector (default: zero vector).
+     * @
+     * @return True if the constraint vectors were successfully updated, false otherwise.
+     */
+    bool updateConstraintVectors(const StateVector& x = StateVector::Zero());
 
     /* ********************************************** *
      *                Callback functions              *
@@ -287,7 +303,21 @@ private:
      * to robot state messages. Make sure to properly initialize the subscriber
      * and set the appropriate topic to receive the messages.
      */
-    void robotStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
+    void robotStateCallback(const sensor_msgs::JointStateConstPtr& msg);
+
+    /* ********************************************** *
+     *                 Debug functions                *
+     * ********************************************** */
+
+    /**
+     * @brief Prints the given state vector.
+     *
+     * This function prints the given state vector to the console.
+     *
+     * @param stateVector The state vector to be printed.
+     * @param name The name of the state vector (optional).
+     */
+    void printStateVector(const StateVector& stateVector, const std::string& name = "State Vector");
 };
 
 } // namespace mpc

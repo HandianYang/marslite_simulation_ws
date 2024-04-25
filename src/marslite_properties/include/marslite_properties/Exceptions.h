@@ -21,11 +21,17 @@
 
 #include <string>
 #include <exception>
+#include <ros/duration.h>
 
 /**
  * @namespace marslite operation namespace
 */
 namespace marslite {
+
+/**
+ * @namespace Exceptions for marslite operations.
+*/
+namespace exceptions {
 
 /**
  * @brief Exception for failed class initialization.
@@ -36,6 +42,20 @@ public:
         return "Failed to initialize the class constructor. Aborting...";
     }
 };
+
+class TimeOutException : public std::exception {
+public:
+    explicit TimeOutException(const ros::Duration& maxTimeout) : maxTimeout_(maxTimeout) {}
+
+    const char* what() const noexcept override {
+        const std::string msg = "Timeout (" + std::to_string(maxTimeout_.toSec()) + " seconds) reached. Aborting...";
+        return msg.c_str();
+    }
+private:
+    ros::Duration maxTimeout_;
+};
+
+} // namespace exceptions
 
 /**
  * @namespace Mathematic operations for marslite. Relationship: `marslite:math`
@@ -50,7 +70,7 @@ public:
     explicit DataNumberLessThan2Exception(const long& dataNum = -1) : dataNum_(dataNum) {}
 
     const char* what() const noexcept override {
-        const std::string msg = "Number of data (" + std::to_string(dataNum_) + " was given) less than 2";
+        const std::string msg = "Number of data (" + std::to_string(dataNum_) + " was given) less than 2. Aborting...";
         return msg.c_str();
     }
 
