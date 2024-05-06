@@ -2,7 +2,7 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Thu, Apr 25, 2024
+* Last update: Mon, May 6, 2024
 
 <!-- ## Prerequisites
 
@@ -161,49 +161,49 @@ Note that every command should be executed **on the Docker container** rather th
 ### Navigation features
 
 1. Launch **SLAM** using 'gmapping' method:
-```Shell
-roslaunch marslite_navigation slam_gmapping.launch
-```
+    ```Shell
+    roslaunch marslite_navigation slam_gmapping.launch
+    ```
 
 2. Launch **navigation** with  A* and DWA:
-```Shell
-roslaunch marslite_navigation navigation.launch
-```
+    ```Shell
+    roslaunch marslite_navigation navigation.launch
+    ```
 
 3. Directly drive the robot with keyboard inputs:
-```Shell
-roslaunch marslite_navigation teleop_keyboard.launch
-```
+    ```Shell
+    roslaunch marslite_navigation teleop_keyboard.launch
+    ```
 
 4. Directly drive the robot with joystick inputs:
-```Shell
-roslaunch marslite_navigation teleop_joystick.launch
-```
+    ```Shell
+    roslaunch marslite_navigation teleop_joystick.launch
+    ```
 
 5. Drive the robot with shared autonomy with keyboard inputs
 (`navigation.launch` is required to launch)
-```Shell
-roslaunch marslite_navigation shared_control_keyboard.launch
-```
+    ```Shell
+    roslaunch marslite_navigation shared_control_keyboard.launch
+    ```
 
 6. Drive the robot with shared autonomy with joystick inputs
 (`navigation.launch` is required to launch)
-```Shell
-roslaunch marslite_navigation shared_control_joystick.launch
-```
+    ```Shell
+    roslaunch marslite_navigation shared_control_joystick.launch
+    ```
 
 
 ### Robotic arm control
 
 1. Launch the Moveit! control interface
-```Shell
-roslaunch mars_lite_moveit_config mars_lite_moveit_planning_execution_gz.launch
-```
+    ```Shell
+    roslaunch mars_lite_moveit_config mars_lite_moveit_planning_execution_gz.launch
+    ```
 
 2. **(Under development)** Trajectory planning using MPC model
-```Shell
-rosrun marslite_mpc mpc
-```
+    ```Shell
+    rosrun marslite_mpc mpc
+    ```
 
 
 ## Known issues

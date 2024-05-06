@@ -6,12 +6,12 @@ namespace teleoperation {
 
 bool TeleopJoystick::run(void)
 {
-    joySubscriber_ = nh_.subscribe("/joy", 1, &TeleopJoystick::joyCB, this);
+    joySubscriber_ = nh_.subscribe("/unity/joy", 1, &TeleopJoystick::joyCB, this);
     
     while (ros::ok()) {
         std::unique_lock<std::mutex> lock(joyMutex_);
         {   
-            // Read the message of `/joy` topic, and translate it into the robot's velocity
+            // Read the message of `/unity/joy` topic, and translate it into the robot's velocity
             switch (axesNum_) {
             case 2:
                 angularVelocity_.velocity = (-1) * joy_.axes[1] * angularVelocity_.limit.max;
@@ -52,7 +52,7 @@ void TeleopJoystick::joyCB(const sensor_msgs::JoyConstPtr& joyPtr)
     {
         axesNum_ = joyPtr->axes.size();
         buttonsNum_ = joyPtr->buttons.size();
-        ROS_INFO_STREAM_ONCE(ros::this_node::getName() << " has subscribed /joy topic!");
+        ROS_INFO_STREAM_ONCE(ros::this_node::getName() << " has subscribed /unity/joy topic!");
         ROS_INFO_STREAM_ONCE("Received message contains: "
             << "\t" << axesNum_    << " axes and "
             << "\t" << buttonsNum_ << " buttons.");
