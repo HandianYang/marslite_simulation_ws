@@ -20,16 +20,12 @@
 #define MARSLITE_MPC_H_
 
 #include <ros/ros.h>
-#include <cmath>
-#include <time.h>
-
-#include <sensor_msgs/JointState.h>
+// #include <cmath>
 
 #include <Eigen/Dense>              // eigen
 #include "OsqpEigen/OsqpEigen.h"    // osqp-eigen
 
-#include <actionlib/client/simple_action_client.h>
-#include <control_msgs/FollowJointTrajectoryAction.h>
+
 #include <trajectory_msgs/JointTrajectory.h>
 
 #include "marslite_properties/Arithmetics.h"
@@ -55,7 +51,6 @@ class ModelPredictiveControl {
 public:
     using MPCClassPtr = std::shared_ptr<ModelPredictiveControl>;
 
-    using JointTrajectoryAction = actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>;
     using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
     using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
     

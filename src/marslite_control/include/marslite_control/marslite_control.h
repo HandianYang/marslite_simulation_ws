@@ -4,7 +4,7 @@
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
- * @brief The executable for testing the default poses planning in Model Predictive Control (MPC) function for marslite robots.
+ * @brief The header file for the control scheme in Model Predictive Control (MPC) function for marslite robots.
  * @note `marslite_control.h` is part of `marslite_simulation_ws`.
  * 
  * `marslite_simulation_ws` is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published
@@ -25,6 +25,7 @@
 #include "OsqpEigen/OsqpEigen.h"    // osqp-eigen
 
 #include <sensor_msgs/JointState.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
@@ -108,6 +109,7 @@ private:
      * ************************************ */
     ros::NodeHandle nh_;
     ros::Subscriber robotStateSubscriber_;
+    ros::Subscriber joyPoseLeftSubscriber_;
 
     ros::Rate loopRate_;
     ros::Duration maxTimeout_;
@@ -116,6 +118,7 @@ private:
      *                Messages              *
      * ************************************ */
     sensor_msgs::JointState robotState_;
+    geometry_msgs::PoseStamped joyPoseLeft_;
 
     /* ************************************ *
      *         Trajectory planning          *
@@ -127,6 +130,7 @@ private:
      *                 Mutex                *
      * ************************************ */
     std::mutex robotStateMutex_;
+    std::mutex joyPoseLeftMutex_;
 
 private:
     /* ********************************************** *
@@ -143,6 +147,14 @@ private:
      * @throw `marslite::exceptions::TimeOutException` if the subscription is not successful within the timeout.
      */
     void subscribeRobotState();
+
+    /**
+     * @brief Subscribes to the pose of the joysticks.
+     * 
+     * This function sets up a subscription to receive joy pose messages.
+     * It allows the program to receive and process joy pose data.
+     */
+    void subscribeJoyPose();
 
     /**
      * @brief Connect to the `FollowJointTrajectoryAction` Server.
@@ -172,6 +184,21 @@ private:
      * and set the appropriate topic to receive the messages.
      */
     void robotStateCallback(const sensor_msgs::JointStateConstPtr& msg);
+
+    /**
+     * @brief Callback function for receiving joy pose messages.
+     * 
+     * This function is called whenever a new joy pose message is received.
+     * It takes a `geometry_msgs::PoseStamped::ConstPtr` as input, which contains
+     * the pose information of the joysticks.
+     * 
+     * @param msg The received joy pose message.
+     * 
+     * @note This function is intended to be used as a callback for subscribing
+     * to joy pose messages. Make sure to properly initialize the subscriber
+     * and set the appropriate topic to receive the messages.
+     */
+    void joyPoseLeftCallback(const geometry_msgs::PoseStampedConstPtr& msg);
 };
 
 }  // namespace control

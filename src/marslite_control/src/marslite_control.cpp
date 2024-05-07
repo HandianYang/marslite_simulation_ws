@@ -4,7 +4,7 @@
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
- * @brief The executable for testing the default poses planning in Model Predictive Control (MPC) function for marslite robots.
+ * @brief The executable file for the control scheme in Model Predictive Control (MPC) function for marslite robots.
  * @note `marslite_control.cpp` is part of `marslite_simulation_ws`.
  * 
  * `marslite_simulation_ws` is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published
@@ -35,9 +35,6 @@ MarsliteControlScheme::MarsliteControlScheme(const ros::NodeHandle& nh)
     try {
         // Subscribe the `/joint_states` topic
         this->subscribeRobotState();
-
-        // Update the initial state from the `/joint_states` topic
-        this->updateInitialStateFromRobotState();
 
         // Connect to the `FollowJointTrajectoryAction` action server
         this->connectJointTrajectoryActionServer();
@@ -115,6 +112,10 @@ bool MarsliteControlScheme::trajectoryPlanningQPSolver()
     return true;
 }
 
+/* ********************************************** *
+ *                 Initialization                 *
+ * ********************************************** */
+
 void MarsliteControlScheme::subscribeRobotState()
 {
     const ros::Duration timestep = ros::Duration(0.1);
@@ -136,6 +137,27 @@ void MarsliteControlScheme::subscribeRobotState()
     ROS_INFO_STREAM("\tSuccessfully subscribing the \"/joint_states\" topic!");
 }
 
+void MarsliteControlScheme::subscribeJoyPose()
+{
+    const ros::Duration timestep = ros::Duration(0.1);
+    ros::Duration signalTimeoutTimer = ros::Duration(0);
+
+    // Subscribe the `/joy_pose` topic
+    joyPoseLeftSubscriber_ = nh_.subscribe("/unity/joy_pose/left", 1, &MarsliteControlScheme::joyPoseLeftCallback, this);
+
+    // Wait for the publisher of the `/joy_pose` topic
+    ROS_INFO_STREAM("MarsliteControlScheme::subscribeLeftJoyPose()");
+    ROS_INFO_STREAM("\tWaiting for subscribing the \"/unity/joy_pose/left\" topic...");
+    while (ros::ok() && joyPoseLeftSubscriber_.getNumPublishers() == 0 && signalTimeoutTimer < maxTimeout_) {
+        // Check subscription every 0.1 seconds
+        signalTimeoutTimer += timestep;
+        timestep.sleep();
+    }
+    if (signalTimeoutTimer >= maxTimeout_) throw TimeOutException(maxTimeout_);
+
+    ROS_INFO_STREAM("\tSuccessfully subscribing the \"/unity/joy_pose/left\" topic!");
+}
+
 void MarsliteControlScheme::connectJointTrajectoryActionServer()
 {
     // Initialize the `FollowJointTrajectoryAction` action client
@@ -150,11 +172,23 @@ void MarsliteControlScheme::connectJointTrajectoryActionServer()
     ROS_INFO_STREAM("\tSuccessfully connecting to the FollowJointTrajectoryAction action server!");
 }
 
+/* ********************************************** *
+ *                Callback functions              *
+ * ********************************************** */
+
 void MarsliteControlScheme::robotStateCallback(const sensor_msgs::JointStateConstPtr& msg)
 {
     std::unique_lock<std::mutex> lock(robotStateMutex_);
     {
         robotState_ = *msg;
+    }
+}
+
+void MarsliteControlScheme::joyPoseLeftCallback(const geometry_msgs::PoseStampedConstPtr& msg)
+{
+    std::unique_lock<std::mutex> lock(joyPoseLeftMutex_);
+    {
+        joyPoseLeft_ = *msg;
     }
 }
 
