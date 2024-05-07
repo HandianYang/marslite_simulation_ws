@@ -2,9 +2,9 @@
 
 * Author: Handian Yang
 * Email: ych0610765@gmail.com
-* Last update: Mon, May 6, 2024
+* Last update: Tue, May 7, 2024
 
-<!-- ## Prerequisites
+## Prerequisites
 
 ### Hardware (PC)
 - NVIDIA GPU (compatible with NVIDIA GPU driver 515 version)
@@ -12,7 +12,7 @@
 ### Software
 - NVIDIA-driver-515
 - nvidia-docker2
-- docker engine -->
+- docker engine
 
 ## Setup
 
@@ -200,9 +200,9 @@ Note that every command should be executed **on the Docker container** rather th
     roslaunch mars_lite_moveit_config mars_lite_moveit_planning_execution_gz.launch
     ```
 
-2. **(Under development)** Trajectory planning using MPC model
+2. Trajectory planning using MPC model
     ```Shell
-    rosrun marslite_mpc mpc
+    roslaunch marslite_control test_default_pose_planning.launch
     ```
 
 

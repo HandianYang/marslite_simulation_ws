@@ -67,7 +67,17 @@ public:
      * @param nh The `ros::NodeHandle` to be used by the MPC controller.
      * @throw `marslite::exceptions::ConstructorInitializationFailedException` if the constructor fails to initialize.
      */
-    explicit ModelPredictiveControl(const ros::NodeHandle& nh = ros::NodeHandle());
+    explicit ModelPredictiveControl();
+
+    /**
+     * @brief Sets the initial pose for the Marslite MPC.
+     *
+     * This function sets the initial pose for the Marslite Model Predictive Control (MPC) algorithm.
+     * The initial pose is used as the starting point for the MPC optimization process.
+     *
+     * @param initialPose The initial pose to set. Defaults to `marslite::poses::MARSLITE_POSE_INITIAL`.
+     */
+    void setInitialPose(const StateVector& initialPose = marslite::poses::MARSLITE_POSE_INITIAL);
 
     /**
      * @brief Sets the target pose for the MPC controller.
@@ -75,14 +85,15 @@ public:
      * This function sets the target pose for the MPC controller. The target pose is represented
      * by a matrix of size MPC_STATE_SIZE x 1, where MPC_STATE_SIZE is the size of the state vector.
      *
-     * @param targetPose The target pose vector.
+     * @param targetPose The target pose vector. Defaults to `marslite::poses::MARSLITE_POSE_INITIAL`.
      */
     void setTargetPose(const StateVector& targetPose = marslite::poses::MARSLITE_POSE_INITIAL);
 
     /**
      * @brief Initialize the QP solver.
      * @return True if the QP solver is successfully initialized.
-     * @note DO NOT try to use QP solver if this function returns `FALSE`.
+     * @note (1) The function is activated by the constructor. Therefore, it is not necessary to call this function.
+     * @note (2) DO NOT try to use QP solver if this function returns `FALSE`.
     */
     bool initializeQPSolver();
 
@@ -92,24 +103,9 @@ public:
      * @note ALWAYS remember to initialize the QP solver by invoking `QPSolverInitialization()`
      *  function before solving the problem.
     */
-    bool trajectoryPlanningQPSolver();
+    bool solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectoryWaypoints);
 
 private:
-    /* ************************************ *
-     *              ROS-related             *
-     * ************************************ */
-    ros::NodeHandle nh_;
-    ros::Rate loopRate_;
-    ros::Duration signalTimeoutTimer_;      // timer that is activated when waiting some signals
-    ros::Duration maxTimeout_;              // maximum timeout before blocking
-    
-    ros::Subscriber robotStateSubscriber_;
-
-    /* ************************************ *
-     *               Messages               *
-     * ************************************ */
-    sensor_msgs::JointState robotState_;    // joint states of the mobile robot
-
     /* ************************************ *
      *            MPC parameters            *
      * ************************************ */
@@ -134,44 +130,7 @@ private:
 
     OsqpEigen::Solver solver_;      // QP solver
 
-    /* ************************************ *
-     *         Trajectory planning          *
-     * ************************************ */
-    std::shared_ptr<JointTrajectoryAction> actionClient_;   // `FollowJointTrajectoryAction` action client
-    control_msgs::FollowJointTrajectoryGoal trajectoryGoal_;          // the goal to be sent by action clients
-    trajectory_msgs::JointTrajectoryPoint trajectoryWaypoint_;
-
-    /* ************************************ *
-     *                 Mutex                *
-     * ************************************ */
-    std::mutex robotStateMutex_;
-
 private:
-    /* ********************************************** *
-     *                 Initialization                 *
-     * ********************************************** */
-
-    /**
-     * @brief Subscribes to the robot state topic.
-     * 
-     * This function sets up a subscription to the robot state topic, allowing the
-     * program to receive updates on the current state of the robot.
-     * 
-     * @note Make sure to call this function before attempting to use the robot state.
-     * @throw `marslite::exceptions::TimeOutException` if the subscription is not successful within the timeout.
-     */
-    void subscribeRobotState();
-
-    /**
-     * @brief Connect to the `FollowJointTrajectoryAction` Server.
-     * 
-     * This function establishes a connection with the FollowJointTrajectoryAction Server.
-     * 
-     * @note Make sure to call this function before attempting to send trajectory goals.
-     * @throw `marslite::exceptions::TimeOutException` if the connection is not successful within the timeout.
-     */
-    void connectJointTrajectoryActionServer();
-
 
     /* ********************************************** *
      *                MPC/QP functions                *
@@ -253,17 +212,6 @@ private:
     void castMPCToQPConstraintVectors();
 
     /**
-     * @brief Updates the initial state from the robot state.
-     * 
-     * This function is responsible for updating the initial state of the robot based on the current robot state.
-     * It performs the necessary calculations and updates the internal state variables accordingly.
-     * 
-     * @note This function should be called before solving the MPC problem.
-     * @throw `marslite::exceptions::TimeOutException` if the robot state is not received within the timeout.
-     */
-    void updateInitialStateFromRobotState();
-
-    /**
      * @brief Updates the gradient.
      *
      * This function updates the gradient using the provided reference state vector.
@@ -285,25 +233,6 @@ private:
      * @return True if the constraint vectors were successfully updated, false otherwise.
      */
     bool updateConstraintVectors(const StateVector& x = StateVector::Zero());
-
-    /* ********************************************** *
-     *                Callback functions              *
-     * ********************************************** */
-
-    /**
-     * @brief Callback function for receiving robot state messages.
-     * 
-     * This function is called whenever a new robot state message is received.
-     * It takes a `sensor_msgs::JointState::ConstPtr` as input, which contains
-     * the joint state information of the robot.
-     * 
-     * @param msg The received robot state message.
-     * 
-     * @note This function is intended to be used as a callback for subscribing
-     * to robot state messages. Make sure to properly initialize the subscriber
-     * and set the appropriate topic to receive the messages.
-     */
-    void robotStateCallback(const sensor_msgs::JointStateConstPtr& msg);
 
     /* ********************************************** *
      *                 Debug functions                *

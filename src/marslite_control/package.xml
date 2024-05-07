@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>marslite_mpc</name>
+  <name>marslite_control</name>
   <version>0.0.0</version>
-  <description>The MPC package for marslite robot</description>
+  <description>The robotic control scheme for marslite robots</description>
   <maintainer email="ych0610765@gmail.com">HandianYang</maintainer>
   <license>GPL</license>
 

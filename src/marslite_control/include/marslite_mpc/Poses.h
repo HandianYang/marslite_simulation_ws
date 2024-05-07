@@ -36,7 +36,7 @@ using marslite::math::deg2Rad;
 namespace marslite {
 
 /**
- * @namespace MPC namespace for marslite robots. Relationship: `marslite`::`mpc`
+ * @namespace poses namespace for poses in Model Predictive Control (MPC) function
 */
 namespace poses {
 
@@ -99,7 +99,7 @@ static const StateVector MARSLITE_POSE_DEFAULT4 = (
                      deg2Rad(0)
 ).finished();
 
-} // namespace mpc
+} // namespace poses
 
 } // namespace marslite
 

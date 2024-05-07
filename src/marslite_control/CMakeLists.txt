@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-std=c++14)
 
-project(marslite_mpc)
+project(marslite_control)
 
 ################################################################################
 # Find catkin packages and libraries for catkin and system dependencies
@@ -21,8 +21,6 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OsqpEigen)
 find_package(Eigen3)
-
-
 
 ################################################################################
 # Setup for python modules and scripts
@@ -66,11 +64,14 @@ include_directories(
 
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
-add_library(mpc_lib src/marslite_mpc.cpp)
-target_link_libraries(mpc_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib)
+add_library(control_lib
+  src/marslite_mpc.cpp
+  src/marslite_control.cpp
+)
+target_link_libraries(control_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib)
 
 add_executable(test_default_pose_planning test/test_default_pose_planning.cpp)
-target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} mpc_lib)
+target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} control_lib)
 
 ################################################################################
 # Install

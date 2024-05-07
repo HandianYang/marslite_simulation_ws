@@ -37,7 +37,7 @@ using marslite::math::deg2Rad;
 namespace marslite {
 
 /**
- * @namespace MPC namespace for marslite robots. Relationship: `marslite`::`MPC`
+ * @namespace constraints namespace for constraints in Model Predictive Control (MPC) function
 */
 namespace constraints {
 
@@ -161,7 +161,7 @@ static const InputVector MARSLITE_ACCELERATION_LIMIT_MIN = (
                      -OsqpEigen::INFTY
 ).finished();
 
-} // namespace mpc
+} // namespace constraints
 
 } // namespace marslite
 

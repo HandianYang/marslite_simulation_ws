@@ -22,15 +22,12 @@ namespace marslite {
 
 namespace mpc {
 
-ModelPredictiveControl::ModelPredictiveControl(const ros::NodeHandle& nh)
-    : nh_(nh), loopRate_(MPC_SAMPLE_FREQ), maxTimeout_(60)
+ModelPredictiveControl::ModelPredictiveControl()
 {
     // Set MPC characteristics
     this->setDynamicsMatrices();
     this->setInequalityConstraints();
     this->setWeightMatrices();
-    // x0_ = marslite::poses::MARSLITE_POSE_INITIAL;
-    // xRef_ = marslite::poses::MARSLITE_POSE_DEFAULT1;
 
     // Cast the MPC problem as QP problem
     this->castMPCToQPHessian();
@@ -40,28 +37,14 @@ ModelPredictiveControl::ModelPredictiveControl(const ros::NodeHandle& nh)
 
     // Initialize the QP solver
     if (!this->initializeQPSolver()) {
-        ROS_ERROR_STREAM("[MPC::MPC()] Error initializing QP solver.");
+        ROS_ERROR_STREAM("\tError initializing QP solver.");
         throw ConstructorInitializationFailedException();
     }
+}
 
-    try {
-        // Subscribe the `/joint_states` topic
-        this->subscribeRobotState();
-
-        // Update the initial state from the `/joint_states` topic
-        this->updateInitialStateFromRobotState();
-
-        // Connect to the `FollowJointTrajectoryAction` action server
-        this->connectJointTrajectoryActionServer();
-
-    } catch (const TimeOutException& ex) {
-        ROS_ERROR_STREAM(ex.what());
-        throw ConstructorInitializationFailedException();
-    }
-
-    // Set the joint names for the trajectory
-    trajectoryGoal_.trajectory.joint_names = {"tm_shoulder_1_joint", "tm_shoulder_2_joint", "tm_elbow_joint",
-                                    "tm_wrist_1_joint", "tm_wrist_2_joint", "tm_wrist_3_joint"};
+void ModelPredictiveControl::setInitialPose(const StateVector& initialPose)
+{
+    x0_ = initialPose;
 }
 
 void ModelPredictiveControl::setTargetPose(const StateVector& targetPose)
@@ -90,52 +73,39 @@ bool ModelPredictiveControl::initializeQPSolver()
     return true;
 }
 
-bool ModelPredictiveControl::trajectoryPlanningQPSolver()
+bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectoryWaypoints)
 {
-    ROS_INFO_STREAM("ModelPredictiveControl::trajectoryPlanningQPSolver()");
-
-    // Update the initial state from the robot state
-    try {
-        this->updateInitialStateFromRobotState();
-    } catch (const TimeOutException& ex) {
-        ROS_ERROR_STREAM(ex.what());
-        return false;
-    }
-
     // Update the gradient and the constraint vectors
     if (!this->updateGradient(xRef_)) {
-        ROS_ERROR_STREAM("Error updating the gradient.");
+        ROS_ERROR_STREAM("\tError updating the gradient.");
         return false;
     }
     if (!this->updateConstraintVectors(x0_)) {
-        ROS_ERROR_STREAM("Error updating the constraint vectors.");
+        ROS_ERROR_STREAM("\tError updating the constraint vectors.");
         return false;
     }
 
     // [Special case] Check if the robot is already at the target pose
     if ((x0_ - xRef_).norm() < MPC_ZERO) {
-        ROS_INFO_STREAM("\tThe robot is already at the target pose. Skip the planning process...");
+        ROS_INFO_STREAM("\tThe target pose is almost at the initial pose. Skip the planning process...");
         return true;
     }
 
     Eigen::VectorXd QPSolution; // QPSolution vector
     InputVector u;              // current input
     StateVector x = x0_;        // current state
-    // timespec startTime, finishTime;                     // time record
     size_t counter = 0;         // counter for the trajectory waypoints
 
-
-    // clock_gettime(CLOCK_REALTIME, &startTime);
     while ((x - xRef_).norm() >= MPC_ZERO) {
         // Solve the QP problem
         if (solver_.solveProblem() != OsqpEigen::ErrorExitFlag::NoError) {
-            ROS_ERROR_STREAM("Unable to solve the problem.");
+            ROS_ERROR_STREAM("\tUnable to solve the problem.");
             return false;
         }
 
         // Check if the solution is unfeasible
         if (solver_.getStatus() != OsqpEigen::Status::Solved) {
-            ROS_ERROR_STREAM("The solution is unfeasible.");
+            ROS_ERROR_STREAM("\tThe solution is unfeasible.");
             return false;
         }
 
@@ -147,74 +117,19 @@ bool ModelPredictiveControl::trajectoryPlanningQPSolver()
         trajectoryWaypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
         trajectoryWaypoint.velocities = {u[0], u[1], u[2], u[3], u[4], u[5]};
         trajectoryWaypoint.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
-        trajectoryGoal_.trajectory.points.push_back(trajectoryWaypoint);
+        trajectoryWaypoints.push_back(trajectoryWaypoint);
         
         // Propagate the model
         x = A_ * x + B_ * u;
 
         // Update the constraint vectors
         if (!this->updateConstraintVectors(x)) {
-            ROS_ERROR_STREAM("Error updating the constraint vectors.");
+            ROS_ERROR_STREAM("\tError updating the constraint vectors.");
             return false;
         }
     }
-    // clock_gettime(CLOCK_REALTIME, &finishTime);
-    // ROS_INFO_STREAM("[MPC::trajectoryPlanningQPSolver()] Time taken: " << marslite::time::getOperationTime(startTime, finishTime));
-
-    // Send the trajectory goal to the server, and wait for the result
-    actionClient_->sendGoal(trajectoryGoal_);
-    actionClient_->waitForResult();
-
-    // Check if the action was successful
-    ROS_INFO_STREAM("\tPlanning result: " << actionClient_->getState().toString());
-    if (actionClient_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED) {
-        ROS_ERROR_STREAM("[MPC::trajectoryPlanningQPSolver()] Failed to execute the trajectory.");
-        return false;
-    }
-
-    // Clear the trajectory goal
-    trajectoryGoal_.trajectory.points.clear();
 
     return true;
-}
-
-/* ********************************************** *
- *                 Initialization                 *
- * ********************************************** */
-
-void ModelPredictiveControl::subscribeRobotState()
-{
-    const ros::Duration timestep = ros::Duration(0.1);
-    ros::Duration signalTimeoutTimer = ros::Duration(0);
-
-    // Subscribe the `/joint_states` topic
-    robotStateSubscriber_ = nh_.subscribe("/joint_states", 1, &ModelPredictiveControl::robotStateCallback, this);
-
-    // Wait for the publisher of the `/joint_states` topic
-    ROS_INFO_STREAM("ModelPredictiveControl::subscribeRobotState()");
-    ROS_INFO_STREAM("\tWaiting for subscribing the \"/joint_states\" topic...");
-    while (ros::ok() && robotStateSubscriber_.getNumPublishers() == 0 && signalTimeoutTimer < maxTimeout_) {
-        // Check subscription every 0.1 seconds
-        signalTimeoutTimer += timestep;
-        timestep.sleep();
-    }
-    if (signalTimeoutTimer >= maxTimeout_) throw TimeOutException(maxTimeout_);
-
-    ROS_INFO_STREAM("\tSuccessfully subscribing the \"/joint_states\" topic!");
-}
-
-void ModelPredictiveControl::connectJointTrajectoryActionServer()
-{
-    // Initialize the `FollowJointTrajectoryAction` action client
-    actionClient_ = std::make_shared<JointTrajectoryAction>("/arm_controller/follow_joint_trajectory", true);
-
-    // Wait for the connection to the server
-    ROS_INFO_STREAM("ModelPredictiveControl::connectJointTrajectoryActionServer()");
-    ROS_INFO_STREAM("\tWaiting for connecting to the FollowJointTrajectoryAction action server...");
-    
-    if (!actionClient_->waitForServer(maxTimeout_)) throw TimeOutException(maxTimeout_);
-
-    ROS_INFO_STREAM("\tSuccessfully connecting to the FollowJointTrajectoryAction action server!");
 }
 
 /* ********************************************** *
@@ -360,35 +275,6 @@ void ModelPredictiveControl::castMPCToQPConstraintVectors()
     upperBound_ << upperEquality, upperInequality;
 }
 
-void ModelPredictiveControl::updateInitialStateFromRobotState()
-{
-    ros::Duration signalTimeoutTimer = ros::Duration(0);
-    const ros::Duration timestep = ros::Duration(0.1);
-
-    // Wait for the first valid message of the `/joint_states` topic
-    while (ros::ok() && robotState_.position.empty() && signalTimeoutTimer < maxTimeout_) {
-        // Check message validation every 0.1 seconds
-        signalTimeoutTimer += timestep;
-        timestep.sleep();
-    }
-    if (signalTimeoutTimer >= maxTimeout_) throw TimeOutException(maxTimeout_);
-
-    std::unique_lock<std::mutex> lock(robotStateMutex_);
-    {
-        x0_ = (
-            StateVector() << robotState_.position[4],    // tm_shoulder_1_joint
-                            robotState_.position[5],    // tm_shoulder_2_joint
-                            robotState_.position[3],    // tm_elbow_joint
-                            robotState_.position[6],    // tm_wrist_1_joint
-                            robotState_.position[7],    // tm_wrist_2_joint
-                            robotState_.position[8],    // tm_wrist_3_joint
-                            0,  // mobile base position
-                            0   // mobile base orientation
-        ).finished();
-    }
-    lock.unlock();
-}
-
 bool ModelPredictiveControl::updateGradient(const StateVector& xRef)
 {
     const StateVector Qx_ref = Q_ * (-xRef);
@@ -404,18 +290,6 @@ bool ModelPredictiveControl::updateConstraintVectors(const StateVector& x)
     upperBound_.block(0, 0, MPC_STATE_SIZE, 1) = -x;
 
     return solver_.updateBounds(lowerBound_, upperBound_);
-}
-
-/* ********************************************** *
- *                Callback functions              *
- * ********************************************** */
-
-void ModelPredictiveControl::robotStateCallback(const sensor_msgs::JointStateConstPtr& msg)
-{
-    std::unique_lock<std::mutex> lock(robotStateMutex_);
-    {
-        robotState_ = *msg;
-    }
 }
 
 /* ********************************************** *
