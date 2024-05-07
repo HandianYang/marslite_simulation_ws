@@ -167,6 +167,8 @@ include_directories(include
 #  ${catkin_LIBRARIES}
 #)
 
+add_library(tm700_kin_lib src/tm_kin.cpp)
+set_target_properties(tm700_kin_lib PROPERTIES COMPILE_DEFINITIONS "TM700_DH_PARAMS")
 
 # Hardware Interface
 add_library(tm_hardware_interface src/tm_hardware_interface.cpp)

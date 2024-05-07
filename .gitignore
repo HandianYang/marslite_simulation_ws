@@ -51,6 +51,7 @@ qtcreator-*
 # Emacs
 .#*
 
+.catkin_workspace
 
 
 #############################

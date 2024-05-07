@@ -25,7 +25,7 @@
  *  Created on: Feb 26, 2016
  *      Author: yhtsai
  */
-#include "marslite_mpc/tm_kin.h"
+#include "tm_driver_t/tm_kin.h"
 #include <math.h>
 #include <stdio.h>
 

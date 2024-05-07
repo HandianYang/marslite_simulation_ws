@@ -11,21 +11,11 @@ project(marslite_mpc)
 # Find catkin packages and libraries for catkin and system dependencies
 ################################################################################
 find_package(catkin REQUIRED COMPONENTS
-  # actionlib_msgs
   actionlib
-  # apriltags_ros
   control_msgs
-  # detection_msgs
   geometry_msgs
-  # message_filters
-  # nav_msgs
-  # pcl_conversions
-  # pcl_ros
   roscpp
-  rospy
   sensor_msgs
-  # std_msgs
-  # tf
   trajectory_msgs
 )
 
@@ -54,22 +44,12 @@ find_package(Eigen3)
 catkin_package(
   CATKIN_DEPENDS
     actionlib
-    # apriltags_ros
     control_msgs
-    # detection_msgs
     geometry_msgs
-    # message_filters
-    # nav_msgs
-    # pcl_conversions
-    # pcl_ros
     roscpp
-    rospy
     sensor_msgs
-    # std_msgs
-    # tf
     trajectory_msgs
   LIBRARIES
-    mpc_lib
     tm700_kin_lib
   INCLUDE_DIRS include
 )
@@ -86,20 +66,11 @@ include_directories(
 
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
-add_library(tm700_kin_lib src/tm_kin.cpp)
-set_target_properties(tm700_kin_lib PROPERTIES COMPILE_DEFINITIONS "TM700_DH_PARAMS")
-
 add_library(mpc_lib src/marslite_mpc.cpp)
 target_link_libraries(mpc_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib)
 
 add_executable(test_default_pose_planning test/test_default_pose_planning.cpp)
 target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} mpc_lib)
-
-# add_executable(trajectory_planner src/trajectory_planner_node.cpp)
-# target_link_libraries(trajectory_planner ${catkin_LIBRARIES})
-
-# add_executable(MPCExample src/MPCExample.cpp)
-# target_link_libraries(MPCExample ${catkin_LIBRARIES} OsqpEigen::OsqpEigen)
 
 ################################################################################
 # Install
@@ -116,10 +87,7 @@ install(TARGETS
 )
 
 install(TARGETS
-    # marslite_mpc
-    # trajectory_planner
-    # MPCExample
-    # tm700_kin
+  #
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -128,11 +96,3 @@ install(TARGETS
 ################################################################################
 # Test
 ################################################################################
-
-# if(CATKIN_ENABLE_TESTING)
-#   find_package(rostest REQUIRED)
-#   add_rostest_gtest(test_default_pose_planning
-#     launch/testDefaultPosePlanning.test
-#     test/testDefaultPosePlanning.cpp)
-#   target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} mpc_lib)
-# endif()
