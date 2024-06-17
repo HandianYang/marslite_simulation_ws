@@ -4,7 +4,6 @@
 * Email: ych0610765@gmail.com
 * Last update: Mon, Jun 17, 2024
 
-
 ## Prerequisites
 
 ### Hardware (PC)

@@ -4,16 +4,22 @@
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
- * @brief The executable file for the control scheme in Model Predictive Control (MPC) function for marslite robots.
+ * @brief The source file for the control scheme in
+ *        Model Predictive Control (MPC) function for marslite robots.
  * @note `marslite_control.cpp` is part of `marslite_simulation_ws`.
  * 
- * `marslite_simulation_ws` is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published
- *      by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * `marslite_simulation_ws` is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  * 
- * `marslite_simulation_ws` is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * `marslite_simulation_ws` is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ *  Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License along with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
+ * You should have received a copy of the GNU General Public License along
+ *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include "marslite_control/marslite_control.h"
@@ -45,8 +51,14 @@ MarsliteControlScheme::MarsliteControlScheme(const ros::NodeHandle& nh)
     }
 
     // Set the joint names for the trajectory
-    trajectoryGoal_.trajectory.joint_names = {"tm_shoulder_1_joint", "tm_shoulder_2_joint", "tm_elbow_joint",
-                                    "tm_wrist_1_joint", "tm_wrist_2_joint", "tm_wrist_3_joint"};
+    trajectoryGoal_.trajectory.joint_names = {
+        "tm_shoulder_1_joint",
+        "tm_shoulder_2_joint",
+        "tm_elbow_joint",
+        "tm_wrist_1_joint",
+        "tm_wrist_2_joint",
+        "tm_wrist_3_joint"
+    };
 }
 
 void MarsliteControlScheme::setInitialPose(const StateVector& initialPose)

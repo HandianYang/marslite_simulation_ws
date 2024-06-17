@@ -7,20 +7,24 @@
  * @brief The header file for Model Predictive Control (MPC) function for marslite robots.
  * @note `marslite_mpc.h` is part of `marslite_simulation_ws`.
  * 
- * `marslite_simulation_ws` is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published
- *      by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * `marslite_simulation_ws` is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  * 
- * `marslite_simulation_ws` is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * `marslite_simulation_ws` is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ *  Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License along with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
+ * You should have received a copy of the GNU General Public License along
+ *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
 */
 
 #ifndef MARSLITE_MPC_H_
 #define MARSLITE_MPC_H_
 
 #include <ros/ros.h>
-// #include <cmath>
 
 #include <Eigen/Dense>              // eigen
 #include "OsqpEigen/OsqpEigen.h"    // osqp-eigen
