@@ -4,7 +4,7 @@
   <arg name="direct_control" default="true"/>
 
   <!-- Decide whether or not the robot status will be printed to the console. -->
-  <arg name="message_enabled" default="true"/>
+  <arg name="message_enabled" default="false"/>
 
   <!-- Decide whether or not the robot will gradually slow down
         when there's no incoming inputs. -->
