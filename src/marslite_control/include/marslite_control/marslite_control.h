@@ -23,8 +23,8 @@
  *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MARSLITE_CONTROL_H_
-#define MARSLITE_CONTROL_H_
+#ifndef MARSLITE_CONTROL_MARSLITE_CONTROL_H_
+#define MARSLITE_CONTROL_MARSLITE_CONTROL_H_
 
 #include <ros/ros.h>
 
@@ -38,21 +38,20 @@
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <trajectory_msgs/JointTrajectory.h>
 
-#include "marslite_mpc/marslite_mpc.h"
-#include "marslite_properties/Exceptions.h"
+#include "model_predictive_control/model_predictive_control.h"
+using marslite::control::ModelPredictiveControl;
+
+#include "marslite_properties/Exception.h"
+using marslite::exception::TimeOutException;
+using marslite::exception::ConstructorInitializationFailedException;
 
 /**
  * @namespace marslite operation namespace
 */
 namespace marslite {
 
-using exceptions::TimeOutException;
-using exceptions::ConstructorInitializationFailedException;
-
-using mpc::ModelPredictiveControl;
-
 /**
- * @namespace control namespace for control in Model Predictive Control (MPC) function
+ * @namespace control namespace for marslite robots
 */
 namespace control {
 
@@ -75,9 +74,9 @@ public:
      * This function sets the initial pose for the Marslite Model Predictive Control (MPC) algorithm.
      * The initial pose is used as the starting point for the MPC optimization process.
      *
-     * @param initialPose The initial pose to set. Defaults to `marslite::poses::MARSLITE_POSE_INITIAL`.
+     * @param initialPose The initial pose to set. Defaults to `marslite::pose::INITIAL`.
      */
-    void setInitialPose(const StateVector& initialPose = marslite::poses::MARSLITE_POSE_INITIAL);
+    void setInitialPose(const StateVector& initialPose = marslite::pose::INITIAL);
 
     /**
      * @brief Sets the target pose for the MPC controller.
@@ -85,9 +84,9 @@ public:
      * This function sets the target pose for the MPC controller. The target pose is represented
      * by a matrix of size MPC_STATE_SIZE x 1, where MPC_STATE_SIZE is the size of the state vector.
      *
-     * @param targetPose The target pose vector. Defaults to `marslite::poses::MARSLITE_POSE_INITIAL`.
+     * @param targetPose The target pose vector. Defaults to `marslite::pose::INITIAL`.
      */
-    void setTargetPose(const StateVector& targetPose = marslite::poses::MARSLITE_POSE_INITIAL);
+    void setTargetPose(const StateVector& targetPose = marslite::pose::INITIAL);
 
     /**
      * @brief Updates the initial state from the robot state.
@@ -212,4 +211,4 @@ private:
 
 }  // namespace marslite
 
-#endif  // MARSLITE_CONTROL_H_
+#endif  // MARSLITE_CONTROL_MARSLITE_CONTROL_H_

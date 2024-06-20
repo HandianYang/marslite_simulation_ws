@@ -1,11 +1,11 @@
 /**
- * @file marslite_mpc.h
+ * @file model_predictive_control.h
  * @author Handian Yang
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
  * @brief The header file for Model Predictive Control (MPC) function for marslite robots.
- * @note `marslite_mpc.h` is part of `marslite_simulation_ws`.
+ * @note `model_predictive_control.h` is part of `marslite_simulation_ws`.
  * 
  * `marslite_simulation_ws` is free software: you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License as published
@@ -21,35 +21,34 @@
  *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#ifndef MARSLITE_MPC_H_
-#define MARSLITE_MPC_H_
+#ifndef MARSLITE_CONTROL_MPC_H_
+#define MARSLITE_CONTROL_MPC_H_
 
 #include <ros/ros.h>
 
 #include <Eigen/Dense>              // eigen
 #include "OsqpEigen/OsqpEigen.h"    // osqp-eigen
 
-
 #include <trajectory_msgs/JointTrajectory.h>
 
-#include "marslite_properties/Arithmetics.h"
-#include "marslite_properties/Exceptions.h"
-#include "marslite_mpc/Constants.h"
-#include "marslite_mpc/Constraints.h"
-#include "marslite_mpc/Poses.h"
+#include "marslite_properties/Arithmetic.h"
+#include "marslite_properties/Exception.h"
+using marslite::exception::TimeOutException;
+using marslite::exception::ConstructorInitializationFailedException;
+
+#include "model_predictive_control/Constant.h"
+#include "model_predictive_control/Constraint.h"
+#include "model_predictive_control/Pose.h"
 
 /**
  * @namespace marslite operation namespace
 */
 namespace marslite {
 
-using exceptions::TimeOutException;
-using exceptions::ConstructorInitializationFailedException;
-
 /**
- * @namespace MPC namespace for marslite robots. Relationship: `marslite`::`mpc`
+ * @namespace control namespace for marslite robots
 */
-namespace mpc {
+namespace control {
 
 class ModelPredictiveControl {
 public:
@@ -64,7 +63,8 @@ public:
      * This constructor initializes the MPC controller with the given `ros::NodeHandle`.
      *
      * @param nh The `ros::NodeHandle` to be used by the MPC controller.
-     * @throw `marslite::exceptions::ConstructorInitializationFailedException` if the constructor fails to initialize.
+     * @throw `marslite::exceptions::ConstructorInitializationFailedException`
+     *       if the constructor fails to initialize.
      */
     explicit ModelPredictiveControl();
 
@@ -74,9 +74,9 @@ public:
      * This function sets the initial pose for the Marslite Model Predictive Control (MPC) algorithm.
      * The initial pose is used as the starting point for the MPC optimization process.
      *
-     * @param initialPose The initial pose to set. Defaults to `marslite::poses::MARSLITE_POSE_INITIAL`.
+     * @param initialPose The initial pose to set. Defaults to `marslite::pose::INITIAL`.
      */
-    void setInitialPose(const StateVector& initialPose = marslite::poses::MARSLITE_POSE_INITIAL);
+    void setInitialPose(const StateVector& initialPose = marslite::pose::INITIAL);
 
     /**
      * @brief Sets the target pose for the MPC controller.
@@ -84,9 +84,9 @@ public:
      * This function sets the target pose for the MPC controller. The target pose is represented
      * by a matrix of size MPC_STATE_SIZE x 1, where MPC_STATE_SIZE is the size of the state vector.
      *
-     * @param targetPose The target pose vector. Defaults to `marslite::poses::MARSLITE_POSE_INITIAL`.
+     * @param targetPose The target pose vector. Defaults to `marslite::pose::INITIAL`.
      */
-    void setTargetPose(const StateVector& targetPose = marslite::poses::MARSLITE_POSE_INITIAL);
+    void setTargetPose(const StateVector& targetPose = marslite::pose::INITIAL);
 
     /**
      * @brief Initialize the QP solver.
@@ -248,8 +248,8 @@ private:
     void printStateVector(const StateVector& stateVector, const std::string& name = "State Vector");
 };
 
-} // namespace mpc
+} // namespace control
 
 } // namespace marslite
 
-#endif  // #ifndef MARSLITE_MPC_H_
+#endif  // #ifndef MARSLITE_CONTROL_MPC_H_

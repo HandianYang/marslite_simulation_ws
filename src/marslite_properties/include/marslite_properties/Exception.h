@@ -7,17 +7,22 @@
  * @brief The header file for all exceptions that may occur at marslite robots' operations.
  * @note `Exceptions.h` is part of `marslite_simulation_ws`.
  * 
- * `marslite_simulation_ws` is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published
- *      by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * `marslite_simulation_ws` is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  * 
- * `marslite_simulation_ws` is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * `marslite_simulation_ws` is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ *  Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License along with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
+ * You should have received a copy of the GNU General Public License along
+ *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MARSLITE_EXCEPTIONS_H_
-#define MARSLITE_EXCEPTIONS_H_
+#ifndef MARSLITE_PROPERTIES_EXCEPTION_H_
+#define MARSLITE_PROPERTIES_EXCEPTION_H_
 
 #include <string>
 #include <exception>
@@ -31,7 +36,7 @@ namespace marslite {
 /**
  * @namespace Exceptions for marslite operations.
 */
-namespace exceptions {
+namespace exception {
 
 /**
  * @brief Exception for failed class initialization.
@@ -43,34 +48,35 @@ public:
     }
 };
 
+/**
+ * @brief Exception for reaching the maximum timeout.
+ */
 class TimeOutException : public std::exception {
 public:
-    explicit TimeOutException(const ros::Duration& maxTimeout) : maxTimeout_(maxTimeout) {}
+    explicit TimeOutException(const ros::Duration& maxTimeout)
+        : maxTimeout_(maxTimeout) {}
 
     const char* what() const noexcept override {
-        const std::string msg = "Timeout (" + std::to_string(maxTimeout_.toSec()) + " seconds) reached. Aborting...";
+        const std::string msg = "Timeout (" + std::to_string(maxTimeout_.toSec())
+            + " seconds) reached. Aborting...";
         return msg.c_str();
     }
 private:
     ros::Duration maxTimeout_;
 };
 
-} // namespace exceptions
-
-/**
- * @namespace Mathematic operations for marslite. Relationship: `marslite:math`
-*/
-namespace math {
 
 /**
  * @brief Exception for vectors with size less than 2.
 */
 class DataNumberLessThan2Exception : public std::exception {
 public:
-    explicit DataNumberLessThan2Exception(const long& dataNum = -1) : dataNum_(dataNum) {}
+    explicit DataNumberLessThan2Exception(const long& dataNum = -1)
+        : dataNum_(dataNum) {}
 
     const char* what() const noexcept override {
-        const std::string msg = "Number of data (" + std::to_string(dataNum_) + " was given) less than 2. Aborting...";
+        const std::string msg = "Number of data (" + std::to_string(dataNum_)
+            + " was given) less than 2. Aborting...";
         return msg.c_str();
     }
 
@@ -83,7 +89,8 @@ private:
 */
 class MismatchSizeException : public std::exception {
 public:
-    explicit MismatchSizeException(const long& aSize = -1, const long& bSize = -1) : aSize_(aSize), bSize_(bSize) {}
+    explicit MismatchSizeException(const long& aSize = -1, const long& bSize = -1)
+        : aSize_(aSize), bSize_(bSize) {}
 
     const char* what() const noexcept override {
         const std::string msg = "Mismatch size of two vectors (" + std::to_string(aSize_)
@@ -95,10 +102,9 @@ private:
     long aSize_, bSize_;
 };
 
-} // namespace math
+} // namespace exception
 
 } // namespace marslite
 
 
-
-#endif  // #ifndef MARSLITE_EXCEPTIONS_H_
+#endif  // #ifndef MARSLITE_PROPERTIES_EXCEPTION_H_

@@ -1,9 +1,40 @@
+/**
+ * @file virtual_zone.cpp
+ * @author Handian Yang
+ * @copyright Released under the terms of the GPLv3.0 or later
+ * @date 2024
+ * 
+ * @brief The source file for the virtual zone class. The class is
+ *        an abstract class that provides the basic structure for the virtual zone.
+ * 
+ * @note `virtual_zone.h` is part of `marslite_simulation_ws`.
+ * 
+ * `marslite_simulation_ws` is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ * `marslite_simulation_ws` is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ *  Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "marslite_navigation/shared_control/virtual_zone.h"
-#include "marslite_properties/Properties.h"
+#include "marslite_navigation/move_base.h"
 
-namespace marslite_navigation {
+/**
+ * @namespace marslite operation namespace
+*/
+namespace marslite {
 
-namespace shared_control {
+/**
+ * @namespace navigation namespace
+ */
+namespace navigation {
 
 VirtualZone::VirtualZone(const ros::NodeHandle& nh) : nh_(nh), firstAssign_(true)
 {
@@ -40,6 +71,6 @@ void VirtualZone::robotTwistCB(const geometry_msgs::TwistConstPtr& twistPtr)
     robotTwist_.angular = twistPtr->angular;
 }
 
-} // namespace shared_control
+} // namespace navigation
 
-} // namespace marslite_navigation
+} // namespace marslite

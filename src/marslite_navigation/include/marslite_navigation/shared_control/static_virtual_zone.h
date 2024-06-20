@@ -1,32 +1,66 @@
-#ifndef STATIC_VIRTUAL_ZONE_H_
-#define STATIC_VIRTUAL_ZONE_H_
+/**
+ * @file static_virtual_zone.h
+ * @author Handian Yang
+ * @copyright Released under the terms of the GPLv3.0 or later
+ * @date 2024
+ * 
+ * @brief The header file for the static virtual zone (SVZ) class. The class is
+ *        derived from the virtual zone class.
+ * 
+ * @note `static_virtual_zone.h` is part of `marslite_simulation_ws`.
+ * 
+ * `marslite_simulation_ws` is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ * `marslite_simulation_ws` is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ *  Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
+*/
 
-#include "marslite_navigation/shared_control/virtual_zone.h"
+#ifndef MARSLITE_NAVIGATION_STATIC_VIRTUAL_ZONE_H_
+#define MARSLITE_NAVIGATION_STATIC_VIRTUAL_ZONE_H_
 
 #include <dynamic_reconfigure/server.h>
 #include "marslite_navigation/VirtualZoneConfig.h"
 
-namespace marslite_navigation {
+#include "marslite_navigation/shared_control/virtual_zone.h"
 
-namespace shared_control {
+/**
+ * @namespace marslite operation namespace
+*/
+namespace marslite {
+
+/**
+ * @namespace navigation namespace
+ */
+namespace navigation {
 
 class StaticVirtualZone : public VirtualZone {
 public:
     explicit StaticVirtualZone(const ros::NodeHandle& nh = ros::NodeHandle());
     
 protected:
+    /**
+     * @brief Calculate the static virtual zone (SVZ) fields.
+     * @param laserPtr The LaserScan data pointer (default nullptr).
+     */
     void calculateFields(const sensor_msgs::LaserScanConstPtr& laserPtr = nullptr) override;
 
 private:
-    // dynamic reconfigure
     void reconfigureCB(marslite_navigation::VirtualZoneConfig& config, uint32_t level);
     dynamic_reconfigure::Server<marslite_navigation::VirtualZoneConfig>* server_;
     dynamic_reconfigure::Server<marslite_navigation::VirtualZoneConfig>::CallbackType f_;
 
 };
 
-} // namespace shared_control
+} // namespace navigation
 
-} // namespace marslite_navigation
+} // namespace marslite
 
-#endif  // #ifndef STATIC_VIRTUAL_ZONE_H_
+#endif  // #ifndef MARSLITE_NAVIGATION_STATIC_VIRTUAL_ZONE_H_

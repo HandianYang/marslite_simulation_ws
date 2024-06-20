@@ -1,11 +1,11 @@
 /**
- * @file marslite_mpc.cpp
+ * @file model_predictive_control.cpp
  * @author Handian Yang
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
  * @brief The source file for Model Predictive Control (MPC) function for marslite robots.
- * @note `marslite_mpc.cpp` is part of `marslite_simulation_ws`.
+ * @note `model_predictive_control.cpp` is part of `marslite_simulation_ws`.
  * 
  * `marslite_simulation_ws` is free software: you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License as published
@@ -21,11 +21,17 @@
  *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#include "marslite_mpc/marslite_mpc.h"
+#include "model_predictive_control/model_predictive_control.h"
 
+/**
+ * @namespace marslite operation namespace
+*/
 namespace marslite {
 
-namespace mpc {
+/**
+ * @namespace control namespace for marslite robots
+*/
+namespace control {
 
 ModelPredictiveControl::ModelPredictiveControl()
 {
@@ -164,12 +170,12 @@ void ModelPredictiveControl::setDynamicsMatrices()
 
 void ModelPredictiveControl::setInequalityConstraints()
 {
-    xMax_ = marslite::constraints::MARSLITE_POSITION_LIMIT_MAX;
-    xMin_ = marslite::constraints::MARSLITE_POSITION_LIMIT_MIN;
-    uMax_ = marslite::constraints::MARSLITE_VELOCITY_LIMIT_MAX;
-    uMin_ = marslite::constraints::MARSLITE_VELOCITY_LIMIT_MIN;
-    aMax_ = marslite::constraints::MARSLITE_ACCELERATION_LIMIT_MAX;
-    aMin_ = marslite::constraints::MARSLITE_ACCELERATION_LIMIT_MIN;
+    xMax_ = marslite::constraint::POSITION_MAX;
+    xMin_ = marslite::constraint::POSITION_MIN;
+    uMax_ = marslite::constraint::VELOCITY_MAX;
+    uMin_ = marslite::constraint::VELOCITY_MIN;
+    aMax_ = marslite::constraint::ACCELERATION_MAX;
+    aMin_ = marslite::constraint::ACCELERATION_MIN;
 }
 
 void ModelPredictiveControl::setWeightMatrices()
@@ -315,6 +321,6 @@ void ModelPredictiveControl::printStateVector(const StateVector& stateVector, co
     ROS_INFO_STREAM(ss.str());
 }
 
-} // namespace mpc
+} // namespace control
 
 } // namespace marslite

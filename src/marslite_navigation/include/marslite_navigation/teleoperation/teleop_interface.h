@@ -1,14 +1,45 @@
-#ifndef _TELEOP_INTERFACE_H_
-#define _TELEOP_INTERFACE_H_
+/**
+ * @file teleop_interface.h
+ * @author Handian Yang
+ * @copyright Released under the terms of the GPLv3.0 or later
+ * @date 2024
+ * 
+ * @brief The source file for the teleoperation interface class. The class is
+ *        an abstract class that provides the basic structure for teleoperation.
+ * 
+ * @note `teleop_interface.h` is part of `marslite_simulation_ws`.
+ * 
+ * `marslite_simulation_ws` is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ * `marslite_simulation_ws` is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ *  Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#ifndef MARSLITE_NAVIGATION_TELEOP_INTERFACE_H_
+#define MARSLITE_NAVIGATION_TELEOP_INTERFACE_H_
 
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 
-#include "marslite_properties/Properties.h"
+#include "marslite_navigation/move_base.h"
 
-namespace marslite_navigation {
+/**
+ * @namespace marslite operation namespace
+ */
+namespace marslite {
 
-namespace teleoperation {
+/**
+ * @namespace navigation namespace
+ */
+namespace navigation {
 
 class TeleopInterface {
 public:
@@ -44,10 +75,10 @@ protected:
     bool parseParameters(void);
 };
 
-} // namespace teleoperation
+} // namespace navigation
 
-} // namespace marslite_navigation
+} // namespace marslite
 
 
 
-#endif // _TELEOP_INTERFACE_H_
+#endif // MARSLITE_NAVIGATION_TELEOP_INTERFACE_H_

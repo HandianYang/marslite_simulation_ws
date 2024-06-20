@@ -1,10 +1,11 @@
 /**
- * @file Constants.h
+ * @file Constant.h
  * @author Handian Yang
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
- * @brief The header file for defining some useful constants in Model Predictive Control (MPC) function for marslite robots.
+ * @brief The header file for defining some useful constants in
+ *          Model Predictive Control (MPC) function for marslite robots.
  * @note `Constants.h` is part of `marslite_simulation_ws`.
  * 
  * `marslite_simulation_ws` is free software: you can redistribute it and/or
@@ -21,8 +22,8 @@
  *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MARSLITE_MPC_CONSTANTS_H_
-#define MARSLITE_MPC_CONSTANTS_H_
+#ifndef MARSLITE_CONTROL_MPC_CONSTANT_H_
+#define MARSLITE_CONTROL_MPC_CONSTANT_H_
 
 #include <stdint.h>
 
@@ -32,9 +33,9 @@
 namespace marslite {
 
 /**
- * @namespace MPC namespace for marslite robots. Relationship: `marslite`::`mpc`
+ * @namespace control namespace for marslite robots
 */
-namespace mpc {
+namespace control {
 
 static const double MPC_ZERO = 1e-04;    // distance that below this value would be treated as 0
 static const double MPC_SAMPLE_FREQ = 25;
@@ -56,8 +57,8 @@ enum QPConstants : uint64_t {
     QP_BOUND_SIZE       = QP_DYNAMIC_SIZE*2 + QP_CONTROL_SIZE*2     // 2 * `SS` * (`W` + 1) + 2 * `IS` * `W`
 };
 
-} // namespace mpc
+} // namespace control
 
 } // namespace marslite
 
-#endif  // #ifndef MARSLITE_MPC_CONSTANTS_H_
+#endif  // #ifndef MARSLITE_CONTROL_MPC_CONSTANT_H_

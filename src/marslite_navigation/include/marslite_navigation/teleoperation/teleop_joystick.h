@@ -4,7 +4,8 @@
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
- * @brief The header file for the joystick teleoperation class.
+ * @brief The header file for the joystick teleoperation class. The class is
+ *        derived from the `TeleopInterface` class.
  * 
  * @note `teleop_joystick.h` is part of `marslite_simulation_ws`.
  * 
@@ -22,21 +23,23 @@
  *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef _TELEOP_JOYSTICK_H_
-#define _TELEOP_JOYSTICK_H_
-
-#include "marslite_navigation/teleoperation/teleop_interface.h"
+#ifndef MARSLITE_NAVIGATION_TELEOP_JOYSTICK_H_
+#define MARSLITE_NAVIGATION_TELEOP_JOYSTICK_H_
 
 #include <sensor_msgs/Joy.h>
 #include <mutex>
 
-namespace marslite_navigation {
+#include "marslite_navigation/teleoperation/teleop_interface.h"
 
-namespace teleoperation {
+/**
+ * @namespace marslite operation namespace
+ */
+namespace marslite {
 
-const static char* TOPIC_NAME = "/unity/joy";
-const static float DEADZONE_THRESHOLD = 0.3;  // value below this threshold will be ignored
-const static float TRIGGER_THRESHOLD  = 0.95;
+/**
+ * @namespace navigation namespace
+ */
+namespace navigation {
 
 class TeleopJoystick : public TeleopInterface {
 public:
@@ -44,6 +47,10 @@ public:
     bool run(void) override;
 
 private:
+    const char* TOPIC_NAME = "/unity/joy";
+    const float DEADZONE_THRESHOLD = 0.3;  // value below this threshold will be ignored
+    const float TRIGGER_THRESHOLD  = 0.95;
+
     // ROS-related
     ros::Subscriber joySubscriber_;
 
@@ -58,15 +65,19 @@ private:
 
     // mutex
     std::mutex joyMutex_;
-    
-    // callbacks
+
+private:
+    /**
+     * @brief Callback function for the joystick message
+     * @param joyPtr the pointer to the joystick message
+     */
     void joyCB(const sensor_msgs::JoyConstPtr& joyPtr);
 };
 
-} // namespace teleoperation
+} // namespace navigation
 
-} // namespace marslite_navigation
+} // namespace marslite
 
 
 
-#endif // _TELEOP_JOYSTICK_H_
+#endif // MARSLITE_NAVIGATION_TELEOP_JOYSTICK_H_

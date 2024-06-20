@@ -1,11 +1,42 @@
+/**
+ * @file teleop_interface.cpp
+ * @author Handian Yang
+ * @copyright Released under the terms of the GPLv3.0 or later
+ * @date 2024
+ * 
+ * @brief The source file for the teleoperation interface class. The class is
+ *        an abstract class that provides the basic structure for teleoperation.
+ * 
+ * @note `teleop_interface.cpp` is part of `marslite_simulation_ws`.
+ * 
+ * `marslite_simulation_ws` is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ * `marslite_simulation_ws` is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ *  Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "marslite_navigation/teleoperation/teleop_interface.h"
 
-namespace marslite_navigation {
+/**
+ * @namespace marslite operation namespace
+ */
+namespace marslite {
 
-namespace teleoperation {
+/**
+ * @namespace navigation namespace
+ */
+namespace navigation {
 
 TeleopInterface::TeleopInterface(const ros::NodeHandle& nh) : nh_(nh), publishRate_(ros::Rate(60))
-{   
+{
     ROS_ASSERT(parseParameters());
     
     const std::string topicName = directControl_ ? "/cmd_vel" : "/marslite_navigation/user_input";
@@ -42,6 +73,6 @@ bool TeleopInterface::parseParameters(void)
     return true;
 }
 
-} // namespace teleoperation
+} // namespace navigation
 
-} // namespace marslite_navigation
+} // namespace marslite

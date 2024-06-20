@@ -59,19 +59,17 @@ catkin_package(
 include_directories(
   include
   ../marslite_properties/include
+  ../tm_driver_t/include
   ${catkin_INCLUDE_DIRS}
 )
 
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
 add_library(control_lib
-  src/marslite_mpc.cpp
+  src/model_predictive_control.cpp
   src/marslite_control.cpp
 )
 target_link_libraries(control_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib)
-
-add_executable(test_default_pose_planning test/test_default_pose_planning.cpp)
-target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} control_lib)
 
 ################################################################################
 # Install
@@ -97,3 +95,9 @@ install(TARGETS
 ################################################################################
 # Test
 ################################################################################
+
+add_executable(test_default_pose_planning test/test_default_pose_planning.cpp)
+target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} control_lib)
+
+# add_executable(test_kinematics test/test_kinematics.cpp)
+# target_link_libraries(test_kinematics ${catkin_LIBRARIES} tm700_kin_lib)

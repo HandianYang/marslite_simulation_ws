@@ -24,8 +24,14 @@
 
 #include "marslite_control/marslite_control.h"
 
+/**
+ * @namespace marslite operation namespace
+*/
 namespace marslite {
 
+/**
+ * @namespace control namespace for marslite robots
+*/
 namespace control {
 
 MarsliteControlScheme::MarsliteControlScheme(const ros::NodeHandle& nh)

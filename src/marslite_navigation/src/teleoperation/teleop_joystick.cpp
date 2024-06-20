@@ -4,7 +4,8 @@
  * @copyright Released under the terms of the GPLv3.0 or later
  * @date 2024
  * 
- * @brief The source file for the joystick teleoperation class.
+ * @brief The source file for the joystick teleoperation class. The class is
+ *        derived from the `TeleopInterface` class.
  * 
  * @note `teleop_joystick.cpp` is part of `marslite_simulation_ws`.
  * 
@@ -24,9 +25,15 @@
 
 #include "marslite_navigation/teleoperation/teleop_joystick.h"
 
-namespace marslite_navigation {
+/**
+ * @namespace marslite operation namespace
+ */
+namespace marslite {
 
-namespace teleoperation {
+/**
+ * @namespace navigation namespace
+ */
+namespace navigation {
 
 bool TeleopJoystick::run(void)
 {
@@ -96,7 +103,7 @@ void TeleopJoystick::joyCB(const sensor_msgs::JoyConstPtr& joyPtr)
     {
         axesNum_ = joyPtr->axes.size();
         buttonsNum_ = joyPtr->buttons.size();
-        ROS_INFO_STREAM_ONCE(ros::this_node::getName() << " has subscribed /unity/joy topic!");
+        ROS_INFO_STREAM_ONCE(ros::this_node::getName() << " has subscribed" << TOPIC_NAME);
         ROS_INFO_STREAM_ONCE("Received message contains: "
             << "\t" << axesNum_    << " axes and "
             << "\t" << buttonsNum_ << " buttons.");
@@ -107,6 +114,6 @@ void TeleopJoystick::joyCB(const sensor_msgs::JoyConstPtr& joyPtr)
     }
 }
 
-} // namespace teleoperation
+} // namespace navigation
 
-} // namespace marslite_navigation
+} // namespace marslite
