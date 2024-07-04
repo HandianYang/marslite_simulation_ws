@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   sensor_msgs
+  tf
   trajectory_msgs
 )
 
@@ -46,6 +47,7 @@ catkin_package(
     geometry_msgs
     roscpp
     sensor_msgs
+    tf
     trajectory_msgs
   LIBRARIES
     tm700_kin_lib
@@ -65,11 +67,15 @@ include_directories(
 
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
+add_library(tm_kinematics_lib
+  src/tm_kinematics.cpp
+)
+
 add_library(control_lib
   src/model_predictive_control.cpp
   src/marslite_control.cpp
 )
-target_link_libraries(control_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib)
+target_link_libraries(control_lib ${catkin_LIBRARIES} OsqpEigen::OsqpEigen tm700_kin_lib tm_kinematics_lib)
 
 ################################################################################
 # Install
@@ -99,5 +105,8 @@ install(TARGETS
 add_executable(test_default_pose_planning test/test_default_pose_planning.cpp)
 target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} control_lib)
 
-# add_executable(test_kinematics test/test_kinematics.cpp)
-# target_link_libraries(test_kinematics ${catkin_LIBRARIES} tm700_kin_lib)
+add_executable(test_joystick_teleoperation test/test_joystick_teleoperation.cpp)
+target_link_libraries(test_joystick_teleoperation ${catkin_LIBRARIES} control_lib)
+
+add_executable(test_kinematics test/test_kinematics.cpp)
+target_link_libraries(test_kinematics ${catkin_LIBRARIES} tm_kinematics_lib tm700_kin_lib)

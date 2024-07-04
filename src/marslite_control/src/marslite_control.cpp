@@ -35,7 +35,9 @@ namespace marslite {
 namespace control {
 
 MarsliteControlScheme::MarsliteControlScheme(const ros::NodeHandle& nh)
-    : nh_(nh), loopRate_(ros::Duration(25)), maxTimeout_(ros::Duration(30))
+        : nh_(nh), loopRate_(ros::Duration(25)), messageEnabled_(true),
+        timeout_(ros::Duration(30)), pollingSleepDuration_(ros::Duration(0.1)),
+        handTriggerIsPressed_(false), indexTriggerIsPressed_(false)
 {
     try {
         // Initialize the MPC class pointer
@@ -46,13 +48,31 @@ MarsliteControlScheme::MarsliteControlScheme(const ros::NodeHandle& nh)
 
     try {
         // Subscribe the `/joint_states` topic
-        this->subscribeRobotState();
+        subscribeTopicWithTimeout<MarsliteControlScheme, sensor_msgs::JointState>(
+            this, nh_, jointStateSubscriber_, "/joint_states",
+            1, &MarsliteControlScheme::jointStateCallback,
+            timeout_, pollingSleepDuration_
+        );
+        
+        // Subscribe the `/unity/joy_pose/left` topic
+        subscribeTopicWithTimeout<MarsliteControlScheme, geometry_msgs::PoseStamped>(
+            this, nh_, leftJoyPoseSubscriber_, "/unity/joy_pose/left",
+            1, &MarsliteControlScheme::leftJoyPoseCallback,
+            timeout_, pollingSleepDuration_
+        );
+
+        // Subscribe the `/unity/joy/left` topic
+        subscribeTopicWithTimeout<MarsliteControlScheme, sensor_msgs::Joy>(
+            this, nh_, leftJoySubscriber_, "/unity/joy/left",
+            1, &MarsliteControlScheme::leftJoyCallback,
+            timeout_, pollingSleepDuration_
+        );
 
         // Connect to the `FollowJointTrajectoryAction` action server
         this->connectJointTrajectoryActionServer();
 
     } catch (const TimeOutException& ex) {
-        ROS_ERROR_STREAM(ex.what());
+        ROS_ERROR("%s", ex.what());
         throw ConstructorInitializationFailedException();
     }
 
@@ -77,28 +97,29 @@ void MarsliteControlScheme::setTargetPose(const StateVector& targetPose)
     mpcClassPtr_->setTargetPose(targetPose);
 }
 
-void MarsliteControlScheme::updateInitialStateFromRobotState()
+void MarsliteControlScheme::updateInitialStateFromCurrent()
 {
     const ros::Duration timestep = ros::Duration(0.1);
     ros::Duration signalTimeoutTimer = ros::Duration(0);
 
     // Wait for the first valid message of the `/joint_states` topic
-    while (ros::ok() && robotState_.position.empty() && signalTimeoutTimer < maxTimeout_) {
+    while (ros::ok() && jointState_.position.empty()) {
         // Check message validation every 0.1 seconds
         signalTimeoutTimer += timestep;
+        if (signalTimeoutTimer >= timeout_) throw TimeOutException(timeout_);
+
         timestep.sleep();
     }
-    if (signalTimeoutTimer >= maxTimeout_) throw TimeOutException(maxTimeout_);
 
-    std::unique_lock<std::mutex> lock(robotStateMutex_);
+    std::unique_lock<std::mutex> lock(jointStateMutex_);
     {
         mpcClassPtr_->setInitialPose(
-            (StateVector() <<   robotState_.position[4],    // tm_shoulder_1_joint
-                                robotState_.position[5],    // tm_shoulder_2_joint
-                                robotState_.position[3],    // tm_elbow_joint
-                                robotState_.position[6],    // tm_wrist_1_joint
-                                robotState_.position[7],    // tm_wrist_2_joint
-                                robotState_.position[8],    // tm_wrist_3_joint
+            (StateVector() <<   jointState_.position[4],    // tm_shoulder_1_joint
+                                jointState_.position[5],    // tm_shoulder_2_joint
+                                jointState_.position[3],    // tm_elbow_joint
+                                jointState_.position[6],    // tm_wrist_1_joint
+                                jointState_.position[7],    // tm_wrist_2_joint
+                                jointState_.position[8],    // tm_wrist_3_joint
                                 0,  // mobile base position
                                 0   // mobile base orientation
             ).finished()
@@ -107,21 +128,81 @@ void MarsliteControlScheme::updateInitialStateFromRobotState()
     lock.unlock();
 }
 
+/* ********************************************** *
+ *                   Operations                   *
+ * ********************************************** */
+
+void MarsliteControlScheme::joystickTeleoperation()
+{
+    this->updateInitialStateFromCurrent();
+
+    tf::TransformListener listener;
+    tf::StampedTransform initialRoboticGripPoseStampedTF;
+    tf::StampedTransform desiredRoboticGripPoseStampedTF;
+    tf::Transform initialRoboticGripPoseTF;
+    tf::Transform desiredRoboticGripPoseTF;
+
+    geometry_msgs::PoseStamped joyPoseLeftInitial;
+    tf::Transform initialLeftJoyPoseTF;     // initial pose of the left joystick
+    tf::Transform currentLeftJoyPoseTF;     // current pose of the left joystick
+    tf::Transform relativeLeftJoyPoseTF;    // relative pose of the left joystick
+    
+    bool startTeleoperation = false;
+
+    while (ros::ok()) {
+        if (handTriggerIsPressed_ && indexTriggerIsPressed_) {
+            // The safety buttons are pressed. Begin teleoperating the robot.
+            if (!startTeleoperation) {
+                // Obtain the transform from /odom to /robotiq_85_base_link
+                try {
+                    ROS_INFO_STREAM_COND(messageEnabled_, "  Waiting for the transform from /odom to /robotiq_85_base_link...");
+                    
+                    listener.waitForTransform("/odom", "/robotiq_85_base_link", ros::Time(0), timeout_, pollingSleepDuration_);
+                    listener.lookupTransform("/odom", "/robotiq_85_base_link", ros::Time(0), initialRoboticGripPoseStampedTF);
+                    initialRoboticGripPoseTF.setOrigin(initialRoboticGripPoseStampedTF.getOrigin());
+                    initialRoboticGripPoseTF.setRotation(initialRoboticGripPoseStampedTF.getRotation());
+
+                    ROS_INFO_STREAM_COND(messageEnabled_, "  Successfully found the transform from /odom to /robotiq_85_base_link!");
+
+                } catch (tf::TransformException &ex) {
+                    ROS_ERROR("%s", ex.what());
+                    throw TransformNotFoundException("/odom", "/robotiq_85_base_link");
+                }
+
+                tf::poseMsgToTF(leftJoyPose_.pose, initialLeftJoyPoseTF);
+
+                startTeleoperation = true;
+            } else {
+                // Calculate the desired pose of the robot regarding the joystick pose
+                tf::poseMsgToTF(leftJoyPose_.pose, currentLeftJoyPoseTF);
+                relativeLeftJoyPoseTF = initialLeftJoyPoseTF.inverseTimes(currentLeftJoyPoseTF);
+                desiredRoboticGripPoseTF = initialRoboticGripPoseTF * relativeLeftJoyPoseTF;
+            }
+            
+        } else {
+            startTeleoperation = false;
+        }
+
+        loopRate_.sleep();
+        break;
+    }
+}
+
 bool MarsliteControlScheme::trajectoryPlanningQPSolver()
 {  
-    ROS_INFO_STREAM("MarsliteControlScheme::trajectoryPlanningQPSolver()");
+    ROS_INFO_STREAM_COND(messageEnabled_, "MarsliteControlScheme::trajectoryPlanningQPSolver()");
 
     // Solve the trajectory planning problem
     if (!mpcClassPtr_->solveQP(trajectoryGoal_.trajectory.points)) return false;
 
     // Send the trajectory goal to the server, and wait for the result
     actionClient_->sendGoal(trajectoryGoal_);
-    actionClient_->waitForResult(maxTimeout_);
+    actionClient_->waitForResult(timeout_);
 
     // Check if the action was successful
-    ROS_INFO_STREAM("\tPlanning result: " << actionClient_->getState().toString());
+    ROS_INFO_STREAM_COND(messageEnabled_, "  Planning result: " << actionClient_->getState().toString());
     if (actionClient_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED) {
-        ROS_ERROR_STREAM("\tFailed to execute the trajectory.");
+        ROS_ERROR_STREAM_COND(messageEnabled_, "  Failed to execute the trajectory.");
         return false;
     }
 
@@ -134,48 +215,6 @@ bool MarsliteControlScheme::trajectoryPlanningQPSolver()
  *                 Initialization                 *
  * ********************************************** */
 
-void MarsliteControlScheme::subscribeRobotState()
-{
-    const ros::Duration timestep = ros::Duration(0.1);
-    ros::Duration signalTimeoutTimer = ros::Duration(0);
-
-    // Subscribe the `/joint_states` topic
-    robotStateSubscriber_ = nh_.subscribe("/joint_states", 1, &MarsliteControlScheme::robotStateCallback, this);
-
-    // Wait for the publisher of the `/joint_states` topic
-    ROS_INFO_STREAM("MarsliteControlScheme::subscribeRobotState()");
-    ROS_INFO_STREAM("\tWaiting for subscribing the \"/joint_states\" topic...");
-    while (ros::ok() && robotStateSubscriber_.getNumPublishers() == 0 && signalTimeoutTimer < maxTimeout_) {
-        // Check subscription every 0.1 seconds
-        signalTimeoutTimer += timestep;
-        timestep.sleep();
-    }
-    if (signalTimeoutTimer >= maxTimeout_) throw TimeOutException(maxTimeout_);
-
-    ROS_INFO_STREAM("\tSuccessfully subscribing the \"/joint_states\" topic!");
-}
-
-void MarsliteControlScheme::subscribeJoyPose()
-{
-    const ros::Duration timestep = ros::Duration(0.1);
-    ros::Duration signalTimeoutTimer = ros::Duration(0);
-
-    // Subscribe the `/joy_pose` topic
-    joyPoseLeftSubscriber_ = nh_.subscribe("/unity/joy_pose/left", 1, &MarsliteControlScheme::joyPoseLeftCallback, this);
-
-    // Wait for the publisher of the `/joy_pose` topic
-    ROS_INFO_STREAM("MarsliteControlScheme::subscribeLeftJoyPose()");
-    ROS_INFO_STREAM("\tWaiting for subscribing the \"/unity/joy_pose/left\" topic...");
-    while (ros::ok() && joyPoseLeftSubscriber_.getNumPublishers() == 0 && signalTimeoutTimer < maxTimeout_) {
-        // Check subscription every 0.1 seconds
-        signalTimeoutTimer += timestep;
-        timestep.sleep();
-    }
-    if (signalTimeoutTimer >= maxTimeout_) throw TimeOutException(maxTimeout_);
-
-    ROS_INFO_STREAM("\tSuccessfully subscribing the \"/unity/joy_pose/left\" topic!");
-}
-
 void MarsliteControlScheme::connectJointTrajectoryActionServer()
 {
     // Initialize the `FollowJointTrajectoryAction` action client
@@ -185,7 +224,7 @@ void MarsliteControlScheme::connectJointTrajectoryActionServer()
     ROS_INFO_STREAM("MarsliteControlScheme::connectJointTrajectoryActionServer()");
     ROS_INFO_STREAM("\tWaiting for connecting to the FollowJointTrajectoryAction action server...");
     
-    if (!actionClient_->waitForServer(maxTimeout_)) throw TimeOutException(maxTimeout_);
+    if (!actionClient_->waitForServer(timeout_)) throw TimeOutException(timeout_);
 
     ROS_INFO_STREAM("\tSuccessfully connecting to the FollowJointTrajectoryAction action server!");
 }
@@ -194,19 +233,41 @@ void MarsliteControlScheme::connectJointTrajectoryActionServer()
  *                Callback functions              *
  * ********************************************** */
 
-void MarsliteControlScheme::robotStateCallback(const sensor_msgs::JointStateConstPtr& msg)
+void MarsliteControlScheme::jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg)
 {
-    std::unique_lock<std::mutex> lock(robotStateMutex_);
+    std::unique_lock<std::mutex> lock(jointStateMutex_);
     {
-        robotState_ = *msg;
+        jointState_ = *msg;
     }
 }
 
-void MarsliteControlScheme::joyPoseLeftCallback(const geometry_msgs::PoseStampedConstPtr& msg)
+void MarsliteControlScheme::leftJoyCallback(const sensor_msgs::Joy::ConstPtr& msg)
 {
-    std::unique_lock<std::mutex> lock(joyPoseLeftMutex_);
+    std::unique_lock<std::mutex> lock(leftJoyMutex_);
     {
-        joyPoseLeft_ = *msg;
+        leftJoy_ = *msg;
+
+        switch (leftJoy_.axes.size()) {
+        case 4:
+            // [3] primary hand trigger
+            handTriggerIsPressed_ = (leftJoy_.axes[3] > TRIGGER_THRESHOLD);
+        case 3:
+            // [2] primary index trigger
+            indexTriggerIsPressed_ = (leftJoy_.axes[2] > TRIGGER_THRESHOLD);
+            break;
+        default:
+            ROS_WARN_ONCE("Failed to receive the joy topic");
+            ROS_WARN_ONCE(" Please check your joystick(s) setup or rosbridge connection.");
+            break;
+        }
+    }
+}
+
+void MarsliteControlScheme::leftJoyPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+    std::unique_lock<std::mutex> lock(leftJoyPoseMutex_);
+    {
+        leftJoyPose_ = *msg;
     }
 }
 

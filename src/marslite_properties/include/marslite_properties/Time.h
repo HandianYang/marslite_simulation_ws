@@ -26,6 +26,9 @@
 
 
 #include <time.h>
+#include <ros/ros.h>
+#include "marslite_properties/Exception.h"
+using marslite::exception::TimeOutException;
 
 /**
  * @namespace marslite operation namespace
@@ -43,9 +46,58 @@ namespace time {
  * @param finish the given finishing time instance (in type `struct timespec`)
  * @return the time interval in seconds
 */
-const static inline double getOperationTime(const timespec& start, const timespec& finish)
+static inline double getOperationTime(const timespec& start, const timespec& finish)
 {
     return (finish.tv_sec - start.tv_sec) + (finish.tv_nsec - start.tv_nsec) / 1e09;
+}
+
+/**
+ * @brief Subscribes to a ROS topic with a timeout.
+ *
+ * This function subscribes to the specified ROS topic and waits for the
+ *  publisher to become available. If the publisher does not become available
+ *  within the specified timeout duration, a `TimeOutException` is thrown.
+ * 
+ * @tparam ClassType The class type of the class instance.
+ * @tparam MesssageType The message type of the ROS topic.
+ *
+ * @param classPtr A pointer to the class instance that contains the callback function.
+ * @param nh The ROS NodeHandle.
+ * @param subscriber The ROS Subscriber object.
+ * @param topic The name of the ROS topic to subscribe to.
+ * @param queueSize The maximum number of messages to queue up for processing.
+ * @param callback The callback function to be called when a message is received.
+ * @param timeout The maximum duration to wait for the publisher to become
+ *                  available. Default is 10 seconds.
+ * @param pollingSleepDuration The duration to sleep between checking for the
+ *                              publisher. Default is 0.1 seconds.
+ *
+ * @throws `TimeOutException` if the publisher does not become available within
+ *          the specified timeout duration.
+ */
+template <typename ClassType, typename MesssageType>
+static void subscribeTopicWithTimeout(ClassType* classPtr,
+        ros::NodeHandle& nh, ros::Subscriber& subscriber,
+        const char* topic, const uint32_t& queueSize,
+        void (ClassType::*callback)(const typename MesssageType::ConstPtr&),
+        const ros::Duration& timeout = ros::Duration(10),
+        const ros::Duration& pollingSleepDuration = ros::Duration(0.1))
+{
+    ros::Duration signalTimeoutTimer = ros::Duration(0);
+
+    // Subscribe the given ROS topic
+    subscriber = nh.subscribe<MesssageType>(topic, queueSize, callback, classPtr);
+
+    // Wait for the publisher of the given ROS topic
+    ROS_INFO_STREAM("  Waiting for subscribing the \"" << topic << "\" topic...");
+    while (subscriber.getNumPublishers() == 0) {
+        // Check subscription every 0.1 seconds
+        signalTimeoutTimer += pollingSleepDuration;
+        if (signalTimeoutTimer >= timeout) throw TimeOutException(timeout);
+        
+        pollingSleepDuration.sleep();
+    }
+    ROS_INFO_STREAM("  Successfully subscribing the \"" << topic << "\" topic!");
 }
 
 } // namespace time

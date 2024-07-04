@@ -29,6 +29,7 @@ using marslite::control::MarsliteControlScheme;
 
 #include "marslite_properties/Exception.h"
 using marslite::exception::ConstructorInitializationFailedException;
+using marslite::exception::TimeOutException;
 
 int main(int argc, char** argv)
 {
@@ -41,36 +42,38 @@ int main(int argc, char** argv)
         MarsliteControlScheme::ControlClassPtr controlClassPtr = std::make_shared<MarsliteControlScheme>();
 
         // Test 1: planning to the home pose of marslite robots
-        controlClassPtr->updateInitialStateFromRobotState();
+        controlClassPtr->updateInitialStateFromCurrent();
         controlClassPtr->setTargetPose(marslite::pose::HOME);
         ROS_ASSERT(controlClassPtr->trajectoryPlanningQPSolver());
         
         // Test 2: planning to the default1 pose
-        controlClassPtr->updateInitialStateFromRobotState();
+        controlClassPtr->updateInitialStateFromCurrent();
         controlClassPtr->setTargetPose(marslite::pose::DEFAULT1);
         ROS_ASSERT(controlClassPtr->trajectoryPlanningQPSolver());
 
         // Test 3: planning to the default2 pose
-        controlClassPtr->updateInitialStateFromRobotState();
+        controlClassPtr->updateInitialStateFromCurrent();
         controlClassPtr->setTargetPose(marslite::pose::DEFAULT2);
         ROS_ASSERT(controlClassPtr->trajectoryPlanningQPSolver());
 
         // Test 4: planning to the default3 pose
-        controlClassPtr->updateInitialStateFromRobotState();
+        controlClassPtr->updateInitialStateFromCurrent();
         controlClassPtr->setTargetPose(marslite::pose::DEFAULT3);
         ROS_ASSERT(controlClassPtr->trajectoryPlanningQPSolver());
 
         // Test 5: planning to the default4 pose
-        controlClassPtr->updateInitialStateFromRobotState();
+        controlClassPtr->updateInitialStateFromCurrent();
         controlClassPtr->setTargetPose(marslite::pose::DEFAULT4);
         ROS_ASSERT(controlClassPtr->trajectoryPlanningQPSolver());
 
         // Test 6: planning to the home pose of marslite robots
-        controlClassPtr->updateInitialStateFromRobotState();
+        controlClassPtr->updateInitialStateFromCurrent();
         controlClassPtr->setTargetPose(marslite::pose::HOME);
         ROS_ASSERT(controlClassPtr->trajectoryPlanningQPSolver());
 
     } catch (const ConstructorInitializationFailedException& ex) {
+        ROS_ERROR_STREAM(ex.what());
+    } catch (const TimeOutException& ex) {
         ROS_ERROR_STREAM(ex.what());
     }
 

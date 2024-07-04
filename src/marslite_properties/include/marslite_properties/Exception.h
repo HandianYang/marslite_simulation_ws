@@ -48,6 +48,13 @@ public:
     }
 };
 
+class AssertionFailedException : public std::exception {
+public:
+    const char* what() const noexcept override {
+        return "Assertion failed. Aborting...";
+    }
+};
+
 /**
  * @brief Exception for reaching the maximum timeout.
  */
@@ -63,6 +70,23 @@ public:
     }
 private:
     ros::Duration maxTimeout_;
+};
+
+/**
+ * @brief Exception for failing to find the transform between two frames.
+ */
+class TransformNotFoundException : public std::exception {
+public:
+    explicit TransformNotFoundException(const std::string& fromFrame, const std::string& toFrame)
+        : fromFrame_(fromFrame), toFrame_(toFrame) {}
+
+    const char* what() const noexcept override {
+        const std::string msg = "Failed to find the transform from frame " + fromFrame_
+            + " to frame " + toFrame_ + ". Aborting...";
+        return msg.c_str();
+    }
+private:
+    std::string fromFrame_, toFrame_;
 };
 
 

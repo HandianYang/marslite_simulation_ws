@@ -28,15 +28,20 @@
 
 #include <ros/ros.h>
 
+#include <mutex>
+
 #include <Eigen/Dense>              // eigen
 #include "OsqpEigen/OsqpEigen.h"    // osqp-eigen
 
 #include <sensor_msgs/JointState.h>
+#include <sensor_msgs/Joy.h>
 #include <geometry_msgs/PoseStamped.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <trajectory_msgs/JointTrajectory.h>
+
+#include <tf/transform_listener.h>
 
 #include "model_predictive_control/model_predictive_control.h"
 using marslite::control::ModelPredictiveControl;
@@ -44,6 +49,10 @@ using marslite::control::ModelPredictiveControl;
 #include "marslite_properties/Exception.h"
 using marslite::exception::TimeOutException;
 using marslite::exception::ConstructorInitializationFailedException;
+using marslite::exception::TransformNotFoundException;
+
+#include "marslite_properties/Time.h"
+using marslite::time::subscribeTopicWithTimeout;
 
 /**
  * @namespace marslite operation namespace
@@ -55,6 +64,8 @@ namespace marslite {
 */
 namespace control {
 
+static const double TRIGGER_THRESHOLD = 0.95;
+
 /**
  * @brief The class for marslite control
 */
@@ -65,8 +76,13 @@ public:
     using JointTrajectoryAction = actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>;
     using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
     using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
+    using TransformationMatrix = Eigen::Matrix<double, 4, 4>;
 
     explicit MarsliteControlScheme(const ros::NodeHandle& nh = ros::NodeHandle());
+
+    /* ********************************************** *
+     *                     Setters                    *
+     * ********************************************** */
 
     /**
      * @brief Sets the initial pose for the Marslite MPC.
@@ -89,7 +105,7 @@ public:
     void setTargetPose(const StateVector& targetPose = marslite::pose::INITIAL);
 
     /**
-     * @brief Updates the initial state from the robot state.
+     * @brief Updates the initial state from the current robot state.
      * 
      * This function is responsible for updating the initial state of the robot based on the current robot state.
      * It performs the necessary calculations and updates the internal state variables accordingly.
@@ -97,7 +113,16 @@ public:
      * @note This function should be called before solving the MPC problem.
      * @throw `marslite::exceptions::TimeOutException` if the robot state is not received within the timeout.
      */
-    void updateInitialStateFromRobotState();
+    void updateInitialStateFromCurrent();
+
+    /* ********************************************** *
+     *                   Operations                   *
+     * ********************************************** */
+
+    /**
+     * @brief The main function for joystick teleoperation.
+     */
+    void joystickTeleoperation();
 
     /**
      * @brief Plan the trajectory of the robot using QP solver.
@@ -114,53 +139,49 @@ private:
      *              ROS-related             *
      * ************************************ */
     ros::NodeHandle nh_;
-    ros::Subscriber robotStateSubscriber_;
-    ros::Subscriber joyPoseLeftSubscriber_;
+    ros::Subscriber jointStateSubscriber_;
+    ros::Subscriber leftJoySubscriber_;
+    ros::Subscriber leftJoyPoseSubscriber_;
 
     ros::Rate loopRate_;
-    ros::Duration maxTimeout_;
+    ros::Duration timeout_;
+    ros::Duration pollingSleepDuration_;
 
     /* ************************************ *
      *                Messages              *
      * ************************************ */
-    sensor_msgs::JointState robotState_;
-    geometry_msgs::PoseStamped joyPoseLeft_;
+    sensor_msgs::JointState jointState_;        // JointState message of the robot
+    sensor_msgs::Joy leftJoy_;                  // Joy message of the left joystick
+    geometry_msgs::PoseStamped leftJoyPose_;    // PoseStamped message of the left joystick
 
     /* ************************************ *
      *         Trajectory planning          *
      * ************************************ */
-    std::shared_ptr<JointTrajectoryAction> actionClient_;   // `FollowJointTrajectoryAction` action client
-    control_msgs::FollowJointTrajectoryGoal trajectoryGoal_;          // the goal to be sent by action clients
+    // `FollowJointTrajectoryAction` action client
+    std::shared_ptr<JointTrajectoryAction> actionClient_;
+
+    // the goal to be sent by action clients
+    control_msgs::FollowJointTrajectoryGoal trajectoryGoal_;
 
     /* ************************************ *
      *                 Mutex                *
      * ************************************ */
-    std::mutex robotStateMutex_;
-    std::mutex joyPoseLeftMutex_;
+    std::mutex jointStateMutex_;    // mutex for `jointState_`
+    std::mutex leftJoyMutex_;       // mutex for `leftJoy_`
+    std::mutex leftJoyPoseMutex_;   // mutex for `leftJoyPose_`
+    
+
+    /* ************************************ *
+     *                 Flags                *
+     * ************************************ */
+    bool messageEnabled_;           // flag to enable/disable messages
+    bool handTriggerIsPressed_;     // flag to indicate if the primary hand trigger is pressed
+    bool indexTriggerIsPressed_;    // flag to indicate if the primary index trigger is pressed
 
 private:
     /* ********************************************** *
      *                 Initialization                 *
      * ********************************************** */
-
-    /**
-     * @brief Subscribes to the robot state topic.
-     * 
-     * This function sets up a subscription to the robot state topic, allowing the
-     * program to receive updates on the current state of the robot.
-     * 
-     * @note Make sure to call this function before attempting to use the robot state.
-     * @throw `marslite::exceptions::TimeOutException` if the subscription is not successful within the timeout.
-     */
-    void subscribeRobotState();
-
-    /**
-     * @brief Subscribes to the pose of the joysticks.
-     * 
-     * This function sets up a subscription to receive joy pose messages.
-     * It allows the program to receive and process joy pose data.
-     */
-    void subscribeJoyPose();
 
     /**
      * @brief Connect to the `FollowJointTrajectoryAction` Server.
@@ -171,6 +192,8 @@ private:
      * @throw `marslite::exceptions::TimeOutException` if the connection is not successful within the timeout.
      */
     void connectJointTrajectoryActionServer();
+
+    // TransformationMatrix poseToTransformationMatrix(const geometry_msgs::Pose& pose);
 
     /* ********************************************** *
      *                Callback functions              *
@@ -189,7 +212,21 @@ private:
      * to robot state messages. Make sure to properly initialize the subscriber
      * and set the appropriate topic to receive the messages.
      */
-    void robotStateCallback(const sensor_msgs::JointStateConstPtr& msg);
+    void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
+
+    /**
+     * @brief Callback function for receiving joy messages.
+     * 
+     * This function is called whenever a new joy message is received.
+     * It takes a `sensor_msgs::Joy::ConstPtr` as input, which contains
+     * the joystick information.
+     * 
+     * @param msg The received joy message.
+     * @note This function is intended to be used as a callback for subscribing
+     * to joy messages. Make sure to properly initialize the subscriber
+     * and set the appropriate topic to receive the messages.
+     */
+    void leftJoyCallback(const sensor_msgs::Joy::ConstPtr& msg);
 
     /**
      * @brief Callback function for receiving joy pose messages.
@@ -204,7 +241,7 @@ private:
      * to joy pose messages. Make sure to properly initialize the subscriber
      * and set the appropriate topic to receive the messages.
      */
-    void joyPoseLeftCallback(const geometry_msgs::PoseStampedConstPtr& msg);
+    void leftJoyPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
 };
 
 }  // namespace control
