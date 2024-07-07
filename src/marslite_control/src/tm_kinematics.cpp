@@ -166,14 +166,10 @@ Eigen::MatrixXd TMKinematics::solveQ56P(const TransformationMatrix& T,
 		Q56P(1, 2) = atan2(-T26(1, 2), -T26(0, 2));
 	} else if (Q56P.rows() == 1) {
 		// Choose Q6 as Q6ref
-		Q56P(0, 2) = Q6ref;
+		Q56P(0, 1) = Q6ref;
 
 		// Solve QP
-		const double C5 = cos(Q56P(0, 0));
-		const double C6 = cos(Q56P(0, 1));
-		const double S6 = sin(Q56P(0, 1));
-		Q56P(0, 2) = atan2(S6 * T26(0, 0) + C5 * C6 * T26(1, 0),
-						   C5 * C6 * T26(0, 0) - S6 * T26(1, 0));
+		Q56P(0, 2) = Q56P(0, 1) + atan2(T26(1, 0), T26(0, 0));
 	}
 
 	return Q56P;

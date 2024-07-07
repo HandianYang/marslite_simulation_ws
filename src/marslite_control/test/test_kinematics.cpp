@@ -317,6 +317,9 @@ int main(int argc, char** argv)
         // Test 7: customized pose
         addTestInDegree(30, -40, 120, -80, 100, 15);
 
+        // Test 8: customized pose
+        addTestInDegree(-20, 30, 100, -60, 0, 10);
+
         ROS_INFO("All tests passed!");
 
     } catch (const ConstructorInitializationFailedException& e) {
