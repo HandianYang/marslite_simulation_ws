@@ -17,6 +17,7 @@ For DH parameters of other kinds of TM5-Series robotic arm, please check the cla
 ## Forward kinematics
 
 The transformation matrix between coordinates frame `n-1` and `n`:
+
 $$
 \begin{equation}
     A_n =
@@ -28,10 +29,12 @@ $$
     \end{bmatrix*}
 \end{equation}
 $$
+
 where $\theta_n$ represents the **joint angles with offset**. For example, if the angle of joint $2$ is $-42\degree$, then
 $\theta_2 = -42\degree - 90\degree = -132\degree$.
 
 Consequently, the transformation matrices of 6 links:
+
 $$
 \begin{equation}
     A_1 =
@@ -105,6 +108,7 @@ $$
 $$
 
 The transformation matrix from the `base` frame to the `end-effector` frame:
+
 $$
 \begin{equation}
     T_6 = A_1 A_2 A_3 A_4 A_5 A_6 = 
@@ -137,6 +141,7 @@ The process can be split into 3 parts:
 #### Derivation
 
 From $T_6$, we can obtain:
+
 $$
 \begin{equation}
     \begin{cases}
@@ -151,6 +156,7 @@ $$
 $$
 
 Combine these results and obtain:
+
 $$
 \begin{equation}
     \begin{cases}
@@ -162,6 +168,7 @@ $$
 $$
 
 Here, we take the value of $p_x - d_6a_x$ and $p_y - d_6a_y$, and construct the equation:
+
 $$
 \begin{equation}
     C_1(p_x - d_6a_x) - S_1(p_y - d_6a_y) = d_4
@@ -169,6 +176,7 @@ $$
 $$
 
 Let $r\sin(\phi) = p_x - d_6a_x$ and $r\cos(\phi) = p_y - d_6a_y$, where $r = \sqrt{(p_x - d_6a_x)^2 + (p_y - d_6a_y)^2}$ and $\phi = \tan^{-1}{(\frac{p_y - d_6a_y}{p_x - d_6a_x})}$. The equation becomes:
+
 $$
 \begin{equation}
     \begin{split}
@@ -180,6 +188,7 @@ $$
 $$
 
 From the aspect of convertion between trigonometric functions, we can convert $\sin^{-1}$ to $\tan^{-1}$ (or more precisely, $atan2$) to ensure that the function will not reach to $\pm\infty$:
+
 $$
 \begin{equation}
     \begin{split}
@@ -190,6 +199,7 @@ $$
 $$
 
 Hence, the solution of $\theta_1$ shall be
+
 $$
 \begin{equation}
     \begin{split}
@@ -200,6 +210,7 @@ $$
 $$
 
 Here, we have two different configurations regarding the first joint, so we take two values of $\theta_1$.
+
 $$
 \begin{equation}
     \begin{split}
@@ -216,6 +227,7 @@ $$
 ### (2) Solve $\theta_5$, $\theta_6$, and $\theta_P$
 
 From ${A_1}^{-1}T_6$, we can obtain:
+
 $$
 \begin{equation}
     \begin{cases}
@@ -233,6 +245,7 @@ The solution of $\lbrace \theta_5, \theta_6, \theta_P \rbrace$ forms a configura
 #### Derivation on solving $\theta_5$
 
 From the third equation in $(16)$, we could easily obtain $\theta_5$
+
 $$
 \begin{equation}
     \begin{split}
@@ -252,6 +265,7 @@ $$
 #### Derivation on solving $\theta_6$
 
 Dividing the fifth equation by the fourth equation from $(16)$ results in 
+
 $$
 \begin{equation}
     \begin{split}
@@ -262,6 +276,7 @@ $$
 $$
 
 The solutions of $\theta_6$ of the two different configurations are:
+
 $$
 \begin{equation}
     \theta_6 = \tan^{-1}(\frac{-(-S_1o_x + C_1o_y)}{-S_1n_x + C_1n_y}) \text{ or } \tan^{-1}(\frac{-S_1o_x + C_1o_y}{-(-S_1n_x + C_1n_y)})
@@ -271,6 +286,7 @@ $$
 #### Derivation on solving $\theta_P$
 
 Dividing the first equation by the second equation from $(16)$ results in 
+
 $$
 \begin{equation}
     \begin{split}
@@ -281,6 +297,7 @@ $$
 $$
 
 The solutions of $\theta_P$ of the two different configurations are:
+
 $$
 \begin{equation}
     \theta_P = \tan^{-1}(\frac{-a_z}{C_1a_x + S_1a_y}) \text{ or } \tan^{-1}(\frac{-(-a_z)}{-(C_1a_x + S_1a_y)})
@@ -312,6 +329,7 @@ $$
 $$
 
 From ${A_1}^{-1}T_6$, we can obtain
+
 $$
 \begin{equation}
     \begin{cases}
@@ -322,6 +340,7 @@ $$
 $$
 
 Dividing the second equation by the first equation of $(24)$ results in
+
 $$
 \begin{equation}
     \theta_{234} - \theta_6 = \tan^{-1}(\frac{-n_z}{C_1n_x + S_1n_y})
@@ -343,6 +362,7 @@ $$
 $$
 
 From ${A_1}^{-1}T_6$, we can obtain
+
 $$
 \begin{equation}
     \begin{cases}
@@ -353,6 +373,7 @@ $$
 $$
 
 Dividing the second equation by the first equation of $(24)$ results in
+
 $$
 \begin{equation}
     \theta_{234} - \theta_6 = \tan^{-1}(\frac{-n_z}{C_1n_x + S_1n_y})
@@ -368,6 +389,7 @@ We can choose $\theta_6$ as an arbitrary value, and then $\theta_{234} = \theta_
 ### (2) Solve $\theta_2$, $\theta_3$, and $\theta_4$
 
 We utilize the equation set $(10)$ to solve $\theta_2$, $\theta_3$, and $\theta_4$. By performing some operations, we obtain
+
 $$
 \begin{equation}
     \begin{cases}
@@ -376,6 +398,7 @@ $$
     \end{cases}
 \end{equation}
 $$
+
 Here, we denote two equations as $A$ and $B$, respectively.
 
 The solution of $\lbrace \theta_2, \theta_3, \theta_4 \rbrace$ forms a configuration. In general, there are two different configurations regarding $\theta_2$, $\theta_3$, and $\theta_4$, so there shall be two solution sets.
@@ -383,6 +406,7 @@ The solution of $\lbrace \theta_2, \theta_3, \theta_4 \rbrace$ forms a configura
 #### Derivation on solving $\theta_3$
 
 We add $A^2$ to $B^2$ and obtain
+
 $$
 \begin{equation}
     \begin{split}
@@ -394,6 +418,7 @@ $$
 $$
 
 The solutions of $\theta_3$ of the two different configurations are:
+
 $$
 \begin{equation}
     \theta_3 = \cos^{-1}(\frac{A^2 + B^2 - {a_2}^2 - {a_3}^2}{2a_2a_3})
@@ -404,6 +429,7 @@ $$
 #### Derivation on solving $\theta_2$
 
 We subtlely change the expression of RHS as
+
 $$
 \begin{equation}
     \begin{cases}
@@ -414,6 +440,7 @@ $$
 $$
 
 We add $AC_2$ to $BS_2$ and obtain
+
 $$
 \begin{equation}
     \begin{split}
@@ -424,6 +451,7 @@ $$
 $$
 
 Let $A = r\cos(\phi)$ and $B = r\sin(\phi)$, where $r = \sqrt{A^2 + B^2}$ and $\phi = \tan^{-1}{(\frac{B}{A})}$. The equation becomes:
+
 $$
 \begin{equation}
     \begin{split}
@@ -436,6 +464,7 @@ $$
 $$
 
 The solutions of $\theta_2$ of the two different configurations are:
+
 $$
 \begin{equation}
     \begin{split}
@@ -448,6 +477,7 @@ $$
 #### Derivation on solving $\theta_4$
 
 Since we have obtained the value of $\theta_{234}$, we could easily calculate the value of $\theta_4$ as
+
 $$
 \begin{equation}
     \theta_4 = \theta_{234} - \theta_2 - \theta_3
@@ -461,6 +491,7 @@ The number of solution sets $\lbrace \theta_2, \theta_3, \theta_4 \rbrace$ would
 ##### [Case 1] $C_3 \approx 1$
 
 The equation $(30)$ becomes
+
 $$
 \begin{equation}
     \begin{split}
@@ -474,6 +505,7 @@ $$
 We denote $s = a_2 + a_3 - r$, and determine the occurrance of the exception by the value of $s$. If $s \approx 0$, then $C_3 \approx 1$.
 
 The equation $(33)$ becomes
+
 $$
 \begin{equation}
     \begin{split}
@@ -494,6 +526,7 @@ To sum up, the solution set $\lbrace \theta_2, \theta_3, \theta_4 \rbrace$ is li
 ##### [Case 2] $C_3 \approx -1$
 
 The equation $(30)$ becomes
+
 $$
 \begin{equation}
     \begin{split}
@@ -507,6 +540,7 @@ $$
 We denote $t = r - |a_2 - a_3|$, and determine the occurrance of the exception by the value of $t$. If $t \approx 0$, then $C_3 \approx -1$.
 
 The equation $(33)$ becomes
+
 $$
 \begin{equation}
     \begin{split}
