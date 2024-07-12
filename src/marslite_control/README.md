@@ -18,33 +18,22 @@ This test verifies the functionality of `tm_kinematics.h`, which calculates forw
 roslaunch marslite_control test_kinematics.launch
 ```
 
+### `test_joystick_teleoperation`
+
+This test implements the teleoperation of the robotic arm, driven by the pose of the VR joysticks, which is recognized as some ROS topic in `PoseStamped` type. In the test, the pose of joysticks is passed by the `/unity/joy_pose/left` topic.
+
+**[Note] By default, this launch requires `ros_sharp_communication.launch` to be launched beforehand to connect to Unity through WebSocket.** 
+
+```Shell
+roslaunch marslite_control test_joystick_teleoperation.launch
+```
+
 ## References
 
-### `marslite_mpc`
+### `marslite::mpc::ModelPredictiveControl`
 
-```c++
-namespace marslite {
-    namespace mpc {
-        class ModelPredictiveControl;
-    }
-}
-```
+#### Member Functions
 
-#### Public Member Functions
+### `marslite::control::marslite_control`
 
-#### Private Member Functions
-
-### `marslite_control`
-
-```c++
-namespace marslite {
-    namespace control {
-        class MarsliteControlScheme;
-    }
-}
-```
-
-#### Public Member Functions
-
-#### Private Member Functions
-
+#### Member Functions

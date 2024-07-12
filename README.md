@@ -1,9 +1,5 @@
 # Marslite Robot Simulator in Supermarket 
 
-* Author: Handian Yang
-* Email: ych0610765@gmail.com
-* Last update: Sun, Jul 7, 2024
-
 ## Prerequisites
 
 ### Hardware (PC)
@@ -23,8 +19,6 @@ The required packages and tools of this simulator system could be easily accesse
 If you have not installed Docker engine on your Ubuntu desktop, please click [this](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) to follow the instructions in the official Docker documents.
 
 ### Pull the specified Docker image from Docker Hub
-
-Docker Hub helps you create, manage, and deliver your team's container applications. Here you can find and use various kinds of Docker images, or create your own Docker images.
 
 To utilize the simulator system, users are required to download my designed image. Run the following command to obtain the latest version of my Docker image (click [here](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to check the tagname):
 ```Shell
@@ -77,6 +71,24 @@ After entering the container, simply type `tmux` to enter the tmux interface.
 tmux
 ```
 
+Some frequently used `tmux` shortcuts are listed here:
+- Split the current pane with a horizontal line: `Ctrl+b` `"`
+- Split the current pane with a vertical line: `Ctrl+b` `%`
+- Switch to pane to the given direction:
+    - `Ctrl+b` $\uparrow$
+    - `Ctrl+b` $\downarrow$
+    - `Ctrl+b` $\leftarrow$
+    - `Ctrl+b` $\rightarrow$
+- Resize current pane:
+    - `Ctrl+b+`$\uparrow$ or `Ctrl+b` `Ctrl+`$\uparrow$
+    - `Ctrl+b+`$\downarrow$ or `Ctrl+b` `Ctrl+`$\downarrow$
+    - `Ctrl+b+`$\leftarrow$ or `Ctrl+b` `Ctrl+`$\leftarrow$
+    - `Ctrl+b+`$\rightarrow$ or `Ctrl+b` `Ctrl+`$\rightarrow$
+- Close current pane: `Ctrl+b` `x` (or type `exit` command)
+
+- Enter copy mode (mouse/keyboard scrolling and copying allowed): `Ctrl+b` `[`
+- Quit the copy mode: `q`
+
 For more `tmux` commands, please refer to the [tmux command cheat sheet](https://tmuxcheatsheet.com/).
 
 ### Build the ROS workspace
@@ -108,7 +120,7 @@ sd
 
 ### Remove the Docker container
 
-If you somehow mess up with the existing container (e.g. having trouble `apt-get update`), or you would like to test another projects outside the current working directory, another option is to give up any changes you have made in this contaminated container.
+If you somehow **mess up with the existing container** (e.g. having trouble `apt-get update`), or you would like to **test another projects under the environment provided from the same docker image**, another option is to give up any changes you have made in this contaminated container.
 
 Simply run the command **outside** the Docker container:
 ```Shell
@@ -122,10 +134,19 @@ docker rm marslite_prev  # for container based on previous tags
 ```
 
 
-
 ## Instructions
 
+The following lists some commands that demonstrates the way to launch the simulated environment and the robot, as well as some marslite operations, such as navigation.
+
 Note that every command should be executed **on the Docker container** rather than on your local machine.
+
+### Launch ROS-sharp communication
+
+**[Purpose]** To connect to Unity through WebSocket
+
+```Shell
+roslaunch file_server ros_sharp_communication.launch
+```
 
 ### Launch Gazebo world
 
@@ -134,8 +155,8 @@ Note that every command should be executed **on the Docker container** rather th
     ### default settings
     roslaunch mars_lite_description gazebo_supermarket.launch
 
-    ### realsense D435 camera & ros_bridge launched
-    roslaunch mars_lite_description gazebo_supermarket.launch use_rosbridge:=true realsense_enabled:=true
+    ### realsense D435 camera launched
+    roslaunch mars_lite_description gazebo_supermarket.launch realsense_enabled:=true
     ```
 
 2. Spawn a Marslite robot in an **existing Gazebo world**:
@@ -200,12 +221,21 @@ Note that every command should be executed **on the Docker container** rather th
     roslaunch mars_lite_moveit_config mars_lite_moveit_planning_execution_gz.launch
     ```
 
-2. Trajectory planning using MPC model
+2. Launch control tests
+    (For detailed description, please refer to the [document](https://github.com/HandianYang/marslite_simulation_ws/blob/main/src/marslite_control/README.md))
     ```Shell
+    ## Test trajectory planning toward fixed positions
     roslaunch marslite_control test_default_pose_planning.launch
+
+    ## Test kinematics of TM5-series robotic arm 
+    roslaunch marslite_control test_kinematics.launch
+
+    ## Test joystick teleoperation
+    roslaunch marslite_control test_joystick_teleoperation.launch
     ```
 
 
+<!-- 
 ## Known issues
 
 ### Build-related
@@ -216,7 +246,7 @@ Note that every command should be executed **on the Docker container** rather th
 ### Robot-related
 
 #### Errors
-- **"No p gain specified for pid. Namespace: /gazebo_ros_control/pid_gains/..."**
+- **"No p gain specified for pid. Namespace: /gazebo_ros_control/pid_gains/..."** -->
 
 <!-- #### warnings
 - **"TF_REPEATED_DATA ignoring data with redundant timestamp..."** -->
