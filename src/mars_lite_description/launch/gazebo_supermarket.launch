@@ -1,16 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <!-- ROS sharp -->
-  <arg name="use_rosbridge" default="false"/>
-  
-  <group if="$(arg use_rosbridge)">
-    <node name="file_server" pkg="file_server" type="file_server" output="screen"/>
-    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
-      <param name="port" value="9090"/>
-    </include>
-  </group>
-  
-  
   <!-- Launch the Gazebo -->
   <arg name="world_name" default="$(find mars_lite_description)/worlds/supermarket.world"/>
   <arg name="paused" default="true"/>
