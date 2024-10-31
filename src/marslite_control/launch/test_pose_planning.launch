@@ -9,7 +9,7 @@
   </include>
 
   <arg name="message_enabled" default="true"/>
-  <node name="test_default_pose_planning" pkg="marslite_control" type="test_default_pose_planning" output="screen">
+  <node name="test_pose_planning" pkg="marslite_control" type="test_pose_planning" output="screen">
     <param name="message_enabled" value="$(arg message_enabled)"/>
     <param name="use_joystick" value="false"/>
   </node>

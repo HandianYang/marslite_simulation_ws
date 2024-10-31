@@ -80,6 +80,7 @@ static void subscribeTopicWithTimeout(ClassType* classPtr,
         ros::NodeHandle& nh, ros::Subscriber& subscriber,
         const char* topic, const uint32_t& queueSize,
         void (ClassType::*callback)(const typename MesssageType::ConstPtr&),
+        const bool& messageEnabled = false,
         const ros::Duration& timeout = ros::Duration(10),
         const ros::Duration& pollingSleepDuration = ros::Duration(0.1))
 {
@@ -89,15 +90,16 @@ static void subscribeTopicWithTimeout(ClassType* classPtr,
     subscriber = nh.subscribe<MesssageType>(topic, queueSize, callback, classPtr);
 
     // Wait for the publisher of the given ROS topic
-    ROS_INFO_STREAM("  Waiting for subscribing the \"" << topic << "\" topic...");
-    while (subscriber.getNumPublishers() == 0) {
+    ROS_INFO_STREAM_COND(messageEnabled, "Subscribing the \""
+            << topic << "\" topic...");
+    while (ros::ok() && subscriber.getNumPublishers() == 0) {
         // Check subscription every 0.1 seconds
         signalTimeoutTimer += pollingSleepDuration;
         if (signalTimeoutTimer >= timeout) throw TimeOutException(timeout);
         
         pollingSleepDuration.sleep();
     }
-    ROS_INFO_STREAM("  Successfully subscribing the \"" << topic << "\" topic!");
+    ROS_INFO_STREAM_COND(messageEnabled, "\"" << topic << "\" subscribed!");
 }
 
 } // namespace time

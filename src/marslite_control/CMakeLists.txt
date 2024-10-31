@@ -105,6 +105,12 @@ install(TARGETS
 add_executable(test_default_pose_planning test/test_default_pose_planning.cpp)
 target_link_libraries(test_default_pose_planning ${catkin_LIBRARIES} control_lib)
 
+# add_executable(test_pose_planning test/test_pose_planning.cpp)
+# target_link_libraries(test_pose_planning ${catkin_LIBRARIES} control_lib)
+
+add_executable(test_gripper_moving test/test_gripper_moving.cpp)
+target_link_libraries(test_gripper_moving ${catkin_LIBRARIES} control_lib)
+
 add_executable(test_joystick_teleoperation test/test_joystick_teleoperation.cpp)
 target_link_libraries(test_joystick_teleoperation ${catkin_LIBRARIES} control_lib)
 

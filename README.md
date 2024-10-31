@@ -152,10 +152,10 @@ roslaunch file_server ros_sharp_communication.launch
 
 1. Launch a **Gazebo world of supermarket environment** with Marslite robot:
     ```Shell
-    ### default settings
     roslaunch mars_lite_description gazebo_supermarket.launch
-
-    ### realsense D435 camera launched
+    ```
+    (Optional) Launch with D435 camera
+    ```Shell
     roslaunch mars_lite_description gazebo_supermarket.launch realsense_enabled:=true
     ```
 

@@ -17,7 +17,6 @@
     <arg name="headless" value="$(arg headless)"/>
   </include>
   
-  
   <!-- Spawn the robot -->
   <arg name="laser_enabled" default="true" />
   <arg name="realsense_enabled" default="false" />

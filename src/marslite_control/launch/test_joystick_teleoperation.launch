@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <!-- Set the ROS console output format to the current time (H:M:S) -->
-    <env name="ROSCONSOLE_FORMAT" value="[${severity}] [${node}]: ${message}"/>
+  <env name="ROSCONSOLE_FORMAT" value="[${severity}] [${node}] ${message}"/>
 
-    <!-- Launch the MPC node -->
-    <node name="test_joystick_teleoperation" pkg="marslite_control" type="test_joystick_teleoperation" output="screen">
-    </node>
+  <include file="$(find file_server)/launch/ros_sharp_communication.launch">
+  </include>
+
+  <arg name="gazebo_launch_file" default="gazebo_supermarket.launch"/>
+  <arg name="realsense_enabled" default="false"/>
+  <include file="$(find mars_lite_description)/launch/$(arg gazebo_launch_file)">
+    <arg name="realsense_enabled" value="$(arg realsense_enabled)"/>
+  </include>
+
+  <arg name="debug_msg_enabled" default="true"/>
+  <arg name="position_scale" default="0.8"/>
+  <arg name="orientation_scale" default="0.5"/>
+  <arg name="position_difference_threshold" default="0.01"/>
+  <arg name="orientation_difference_threshold" default="0.01"/>
+  <node name="test_joystick_teleoperation" pkg="marslite_control" type="test_joystick_teleoperation" output="screen">
+    <param name="debug_msg_enabled" value="$(arg debug_msg_enabled)"/>
+    <param name="use_joystick" value="true"/>
+    <param name="position_scale" value="$(arg position_scale)"/>
+    <param name="orientation_scale" value="$(arg orientation_scale)"/>
+    <param name="position_difference_threshold" value="$(arg position_difference_threshold)"/>
+    <param name="orientation_difference_threshold" value="$(arg orientation_difference_threshold)"/>
+  </node>
 </launch>

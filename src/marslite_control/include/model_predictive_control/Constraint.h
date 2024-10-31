@@ -1,25 +1,20 @@
 /**
- * @file Constraint.h
- * @author Handian Yang
- * @copyright Released under the terms of the GPLv3.0 or later
- * @date 2024
+ * marslite_simulation_ws/marslite_control/include/Constraint.h
  * 
- * @brief The header file for defining constraints in
- *          Model Predictive Control (MPC) function for marslite robots.
- * @note `Constraints.h` is part of `marslite_simulation_ws`.
+ * Copyright (C) 2024 Handian Yang
  * 
- * `marslite_simulation_ws` is free software: you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License as published
- *  by the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * 
- * `marslite_simulation_ws` is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
- *  Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License along
- *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef MARSLITE_CONTROL_MPC_CONSTRAINT_H_
@@ -33,9 +28,6 @@ using marslite::control::MPC_STATE_SIZE;
 using marslite::control::MPC_INPUT_SIZE;
 using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
 using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
-
-#include "marslite_properties/Arithmetic.h"
-using marslite::math::deg2Rad;
 
 /**
  * @namespace marslite operation namespace
@@ -95,52 +87,31 @@ static const InputVector INPUT_FREE_MIN = (
                      -OsqpEigen::INFTY
 ).finished();
 
-// upper constraint vector of marslite's joint position 
-static const StateVector POSITION_MAX = (
-    StateVector() << deg2Rad(130),
-                     deg2Rad(125),
-                     deg2Rad(153),
-                     deg2Rad(190),
-                     deg2Rad(178),
-                     deg2Rad(180),
-                     OsqpEigen::INFTY,
-                     deg2Rad(180)
+// upper constraint vector of marslite's joint position
+// [130°, 125°, 153°, 190°, 178°, 180°, inf, 180°]
+static const StateVector POSITION_MAX = (StateVector()
+    << 2.26893, 2.18166, 2.67035, 3.31612,
+       3.10669, 3.14159, OsqpEigen::INFTY, 3.14159
 ).finished();
 
-// lower constraint vector of marslite's joint position 
-static const StateVector POSITION_MIN = (
-    StateVector() << deg2Rad(-115),
-                     deg2Rad(-43),
-                     deg2Rad(-153),
-                     deg2Rad(-190),
-                     deg2Rad(-178),
-                     deg2Rad(-180),
-                     -OsqpEigen::INFTY,
-                     deg2Rad(-180)
+// lower constraint vector of marslite's joint position
+// TODO: Modify the second joint angle from -0.75049 (-43°) to -0.73304(-42°)
+// [-115°, -42°, -153°, -190°, -178°, -180°, -inf, -180°]
+static const StateVector POSITION_MIN = (StateVector()
+    << -2.00713, -0.73304, -2.67035, -3.31612,
+       -3.10669, -3.14159, -OsqpEigen::INFTY, -3.14159
 ).finished();
 
 // upper constraint vector of marslite's joint velocity
-static const InputVector VELOCITY_MAX = (
-    InputVector() << deg2Rad(180),
-                     deg2Rad(180),
-                     deg2Rad(180),
-                     deg2Rad(183),
-                     deg2Rad(183),
-                     deg2Rad(183),
-                     0.7,
-                     deg2Rad(180)
+// [180°/s, 180°/s, 180°/s, 183°/s, 183°/s, 183°/s, 0.7m/s, 180°/s]
+static const InputVector VELOCITY_MAX = (InputVector()
+    << 3.15, 3.15, 3.15, 3.2, 3.2, 3.2, 0.7, 3.15
 ).finished();
 
 // lower constraint vector of marslite's joint velocity
-static const InputVector VELOCITY_MIN = (
-    InputVector() << deg2Rad(-180),
-                     deg2Rad(-180),
-                     deg2Rad(-180),
-                     deg2Rad(-183),
-                     deg2Rad(-183),
-                     deg2Rad(-183),
-                     -0.7,
-                     deg2Rad(-180)
+// [-180°/s, -180°/s, -180°/s, -183°/s, -183°/s, -183°/s, -0.7m/s, -180°/s]
+static const InputVector VELOCITY_MIN = (InputVector()
+    << -3.15, -3.15, -3.15, -3.2, -3.2, -3.2, -0.7, -3.15
 ).finished();
 
 // upper constraint vector of marslite's joint acceleration

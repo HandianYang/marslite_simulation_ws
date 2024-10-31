@@ -1,33 +1,27 @@
 /**
- * @file test_kinematics.cpp
- * @author Handian Yang
- * @copyright Released under the terms of the GPLv3.0 or later
- * @date 2024
+ * marslite_simulation_ws/test/test_kinematics.cpp
  * 
- * @brief The executable for testing the kinematics function for TM5 robotic arms.
+ * Copyright (C) 2024 Handian Yang
  * 
- * @note `test_kinematics.cpp` is part of `marslite_simulation_ws`.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * 
- * `marslite_simulation_ws` is free software: you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License as published
- *  by the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  * 
- * `marslite_simulation_ws` is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
- *  Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License along
- *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <ros/ros.h>
-// #include <vector>
 #include <Eigen/Dense>
 
-#include "tm_driver_t/tm_kin.h"
-#include "tm_kinematics/tm_kinematics.h"
+#include "tm_driver_t/tm_kin.h"           // Standard library
+#include "tm_kinematics/tm_kinematics.h"  // My library
 using marslite::control::TMKinematics;
 
 #include "marslite_properties/Arithmetic.h"
@@ -38,8 +32,10 @@ using marslite::math::deg2Rad;
 using marslite::exception::ConstructorInitializationFailedException;
 using marslite::exception::AssertionFailedException;
 
+#include "model_predictive_control/Pose.h"
+
 // tolerance for comparing two angles
-static constexpr double kAngleTolerance = 1e-03;
+static constexpr double kTolerance = 1e-03;
 
 /**
  * @brief Print the transformation matrix provided from `tm_kin.h`.
@@ -48,12 +44,12 @@ static constexpr double kAngleTolerance = 1e-03;
  */
 void printTransformationMatrix(const double* T, const char* name = "")
 {
-    ROS_INFO("[Transformation matrix] %s", name);
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T[0], T[1], T[2], T[3]);
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T[4], T[5], T[6], T[7]);
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T[8], T[9], T[10], T[11]);
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T[12], T[13], T[14], T[15]);
-    ROS_INFO("--------------------------------------------------");
+  ROS_INFO("[Transformation matrix] %s", name);
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f",  T[0],  T[1],  T[2],  T[3]);
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f",  T[4],  T[5],  T[6],  T[7]);
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f",  T[8],  T[9], T[10], T[11]);
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T[12], T[13], T[14], T[15]);
+  ROS_INFO("--------------------------------------------------");
 }
 
 /**
@@ -63,12 +59,12 @@ void printTransformationMatrix(const double* T, const char* name = "")
  */
 void printTransformationMatrix(const TMKinematics::TransformationMatrix& T, const char* name = "")
 {
-    ROS_INFO("[Transformation matrix] %s", name);
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(0,0), T(0,1), T(0,2), T(0,3));
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(1,0), T(1,1), T(1,2), T(1,3));
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(2,0), T(2,1), T(2,2), T(2,3));
-    ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(3,0), T(3,1), T(3,2), T(3,3));
-    ROS_INFO("--------------------------------------------------");
+  ROS_INFO("[Transformation matrix] %s", name);
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(0,0), T(0,1), T(0,2), T(0,3));
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(1,0), T(1,1), T(1,2), T(1,3));
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(2,0), T(2,1), T(2,2), T(2,3));
+  ROS_INFO("%6.3f  %6.3f  %6.3f  %6.3f", T(3,0), T(3,1), T(3,2), T(3,3));
+  ROS_INFO("--------------------------------------------------");
 }
 
 /**
@@ -81,13 +77,13 @@ void printTransformationMatrix(const TMKinematics::TransformationMatrix& T, cons
  */
 void printIKSolution(const double* Q, const uint8_t& numSolution, const char* name = "")
 {
-    ROS_INFO("[Inverse kinematics solutions] %s", name);
-    for (uint8_t i = 0; i < numSolution; i++) {
-        ROS_INFO("(%d) %8.3f, %8.3f, %8.3f, %8.3f, %8.3f, %8.3f", i,
-            rad2Deg(Q[i*6]), rad2Deg(Q[i*6+1]), rad2Deg(Q[i*6+2]),
-            rad2Deg(Q[i*6+3]), rad2Deg(Q[i*6+4]), rad2Deg(Q[i*6+5]));
-    }
-    ROS_INFO("--------------------------------------------------");
+  ROS_INFO("[Inverse kinematics solutions] %s", name);
+  for (uint8_t i = 0; i < numSolution; i++) {
+    ROS_INFO("(%d) %8.3f, %8.3f, %8.3f, %8.3f, %8.3f, %8.3f", i,
+        rad2Deg(Q[i*6]),    rad2Deg(Q[i*6+1]),  rad2Deg(Q[i*6+2]),
+        rad2Deg(Q[i*6+3]),  rad2Deg(Q[i*6+4]),  rad2Deg(Q[i*6+5]));
+  }
+  ROS_INFO("--------------------------------------------------");
 }
 
 /**
@@ -99,13 +95,13 @@ void printIKSolution(const double* Q, const uint8_t& numSolution, const char* na
  */
 void printIKSolution(const Eigen::MatrixXd& Q, const char* name = "")
 {
-    ROS_INFO("[Inverse kinematics solutions] %s", name);
-    for (uint8_t i = 0; i < Q.rows(); i++) {
-        ROS_INFO("(%d) %8.3f, %8.3f, %8.3f, %8.3f, %8.3f, %8.3f", i,
-            rad2Deg(Q(i, 0)), rad2Deg(Q(i, 1)), rad2Deg(Q(i, 2)),
-            rad2Deg(Q(i, 3)), rad2Deg(Q(i, 4)), rad2Deg(Q(i, 5)));
-    }
-    ROS_INFO("--------------------------------------------------");
+  ROS_INFO("[Inverse kinematics solutions] %s", name);
+  for (uint8_t i = 0; i < Q.rows(); i++) {
+    ROS_INFO("(%d) %8.3f, %8.3f, %8.3f, %8.3f, %8.3f, %8.3f", i,
+        rad2Deg(Q(i, 0)), rad2Deg(Q(i, 1)), rad2Deg(Q(i, 2)),
+        rad2Deg(Q(i, 3)), rad2Deg(Q(i, 4)), rad2Deg(Q(i, 5)));
+  }
+  ROS_INFO("--------------------------------------------------");
 }
 
 /**
@@ -117,102 +113,114 @@ void printIKSolution(const Eigen::MatrixXd& Q, const char* name = "")
  */
 bool testForwardKinematics(const double* Q)
 {
-    // Calculate the forward kinematics using `tm_kin.h` methods
-    double Q_old[6] = { Q[0], Q[1], Q[2], Q[3], Q[4], Q[5] };
-    double T_old[16];
-    tm_kinematics::forward(Q_old, T_old);
+  // Calculate the forward kinematics using `tm_kin.h` methods
+  double Q_old[6] = { Q[0], Q[1], Q[2], Q[3], Q[4], Q[5] };
+  double T_old[16];
+  tm_kinematics::forward(Q_old, T_old);
 
-    // Calculate the forward kinematics using `tm_kinematics.h` methods
-    TMKinematics::TMKinematicsPtr classPtr = std::make_shared<TMKinematics>(marslite::control::TM5_700);
-    TMKinematics::JointVector Q_new;
-    Q_new << Q[0], Q[1], Q[2], Q[3], Q[4], Q[5];
-    TMKinematics::TransformationMatrix T_new = classPtr->forwardKinematics(Q_new);
+  // Calculate the forward kinematics using `tm_kinematics.h` methods
+  TMKinematics::TMKinematicsPtr classPtr = std::make_shared<TMKinematics>(marslite::control::TM5_700);
+  TMKinematics::JointVector Q_new;
+  Q_new << Q[0], Q[1], Q[2], Q[3], Q[4], Q[5];
+  TMKinematics::TransformationMatrix T_new = classPtr->forwardKinematics(Q_new);
 
-    // Compare two results
-    for (uint8_t i = 0; i < 16; i++) {
-        if (std::abs(T_old[i] - T_new(i/4, i%4)) > kAngleTolerance) {
-            ROS_ERROR("Forward kinematics test failed.");
-            printTransformationMatrix(T_old, "Standard solution");
-            printTransformationMatrix(T_new, "My solution");
-            return false;
-        }
+  // Compare two results
+  for (uint8_t i = 0; i < 16; i++) {
+    if (std::abs(T_old[i] - T_new(i/4, i%4)) > kTolerance) {
+      ROS_ERROR("Forward kinematics test failed.");
+      printTransformationMatrix(T_old, "Standard solution");
+      printTransformationMatrix(T_new, "My solution");
+      return false;
     }
-    
-    ROS_INFO("Forward kinematics test passed!");
-    printTransformationMatrix(T_new, "My solution");
-    return true;
+  }
+  
+  ROS_INFO("Forward kinematics test passed!");
+  printTransformationMatrix(T_new, "My solution");
+  return true;
 }
 
 /**
- * @brief Test the inverse kinematics function by comparing the results with the
- *        standard solutions provided by `tm_kin.h`. The result will be
- *        considered as valid only if all solutions are the same as the standard
- *        solutions.
- * @param T The transformation matrix in size 4x4 (=16)
+ * @brief Check if two transformation matrices are the same.
+ * @param T1 The first transformation matrix in size 16.
+ * @param T2 The second transformation matrix in size 16.
+ * @return `true` if the two transformation matrices are the same, `false` otherwise.
+ */
+bool isSameTransformationMatrix(const double* T1, const double* T2)
+{
+  for (uint8_t i = 0; i < 16; i++) {
+    if (std::abs(T1[i] - T2[i]) > kTolerance) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * @brief Test the standard inverse kinematics function by comparing the
+ *        transformation matrix obtained from the solution with the input
+ *        transformation matrix. The result will be considered as valid only
+ *        if two transformation matrices are the same.
+ * @param T The transformation matrix in size 16.
  * @return `true` if the test passes, `false` otherwise.
  */
-bool testInverseKinematics(const double* T)
+bool testStandardInverseKinematics(const double* T)
 {
-    // Calculate the inverse kinematics using `tm_kin.h` methods
-    double Q_sols_old[8*6];
-    double T_old[16] = { T[0], T[1], T[2], T[3],
-                         T[4], T[5], T[6], T[7], 
-                         T[8], T[9], T[10], T[11], 
-                         T[12], T[13], T[14], T[15] };
-    const int num_sols_old = tm_kinematics::inverse(T_old, Q_sols_old, 0.0);
+  // Calculate the inverse kinematics using `tm_kin.h` methods
+  double Q_sols[8*6];
+  const int num_sols_old = tm_kinematics::inverse(T, Q_sols, 0.0);
 
-    // Calculate the inverse kinematics using `tm_kinematics.h` methods
-    TMKinematics::TMKinematicsPtr classPtr = std::make_shared<TMKinematics>(marslite::control::TM5_700);
-    TMKinematics::TransformationMatrix T_new;
-    T_new << T[0], T[1], T[2], T[3],
-             T[4], T[5], T[6], T[7],
-             T[8], T[9], T[10], T[11],
-             T[12], T[13], T[14], T[15];
-    Eigen::MatrixXd Q_sols_new = classPtr->inverseKinematics(T_new);
-
-    // Compare the number of solutions of two results
-    if (num_sols_old != Q_sols_new.rows()) {
-        ROS_ERROR("Inverse kinematics test failed.");
-        ROS_ERROR("Number of solutions: %d (Standard) vs %ld (My solution)", num_sols_old, Q_sols_new.rows());
-        return false;
+  double T_test[16];
+  for (uint8_t i = 0; i < num_sols_old; i++) {
+    double Q_test[6] = { Q_sols[i*6], Q_sols[i*6+1], Q_sols[i*6+2],
+                         Q_sols[i*6+3], Q_sols[i*6+4], Q_sols[i*6+5] };
+    tm_kinematics::forward(Q_test, T_test);
+    if (!isSameTransformationMatrix(T, T_test)) {
+      ROS_INFO("Standard inverse kinematics test failed! The solution %d is not valid.", i);
+      printIKSolution(Q_sols, num_sols_old, "Standard solution");
+      return false;
     }
+  }
 
-    // Compare two results
-    bool isValidSolution = false;
-    bool isVisited[8] = { false };
-    for (uint8_t i = 0; i < num_sols_old; i++) {
-        for (uint8_t j = 0; j < num_sols_old; ++j) {
-            if (isVisited[j]) continue;
-            
-            // Find the solution that is closest to one of the standard solutions
-            isValidSolution = true;
-            for (uint8_t k = 0; k < 6; k++) {
-                const double diff = std::abs(Q_sols_old[i*6+k] - Q_sols_new(j, k));
-                if (diff > kAngleTolerance && diff < 2*M_PI - kAngleTolerance) {
-                    isValidSolution = false;
-                    break;
-                }
-            }
-            
-            // Mark the solution as visited if it is valid
-            if (isValidSolution) {
-                isVisited[j] = true;
-                break;
-            }
-        }
+  ROS_INFO("Standard inverse kinematics test passed!");
+  printIKSolution(Q_sols, num_sols_old, "Standard solution");
+  return true;
+}
 
-        if (!isValidSolution) {
-            // Fail to find the same solution
-            ROS_ERROR("Inverse kinematics test failed.");
-            printIKSolution(Q_sols_old, num_sols_old, "Standard solution");
-            printIKSolution(Q_sols_new, "My solution");
-            return false;
-        }
+/**
+ * @brief Test my inverse kinematics function by comparing the
+ *        transformation matrix obtained from the solution with the input
+ *        transformation matrix. The result will be considered as valid only
+ *        if two transformation matrices are the same.
+ * @param T The transformation matrix in size 16.
+ * @return `true` if the test passes, `false` otherwise.
+ */
+bool testMyInverseKinematics(const double* T)
+{
+  // Calculate the inverse kinematics using `tm_kinematics.h` methods
+  TMKinematics::TMKinematicsPtr classPtr = std::make_shared<TMKinematics>(marslite::control::TM5_700);
+  TMKinematics::TransformationMatrix T6;
+  T6 << T[0], T[1], T[2], T[3],
+        T[4], T[5], T[6], T[7],
+        T[8], T[9], T[10], T[11],
+        T[12], T[13], T[14], T[15];
+  Eigen::MatrixXd Q_sols = classPtr->inverseKinematics(T6);
+
+  TMKinematics::TransformationMatrix T_test;
+  for (uint8_t i = 0; i < Q_sols.rows(); i++) {
+    TMKinematics::JointVector Q_test;
+    Q_test << Q_sols(i, 0), Q_sols(i, 1), Q_sols(i, 2),
+              Q_sols(i, 3), Q_sols(i, 4), Q_sols(i, 5);
+    T_test = classPtr->forwardKinematics(Q_test);
+    if (!isSameTransformationMatrix(T6.data(), T_test.data())) {
+      ROS_INFO("My inverse kinematics test failed! The solution %d is not valid.", i);
+      printIKSolution(Q_sols, "My solution");
+      return false;
     }
+  }
 
-    ROS_INFO("Inverse kinematics test passed!");
-    printIKSolution(Q_sols_new, "My solution");
-    return true;
+  ROS_INFO("My inverse kinematics test passed!");
+  printIKSolution(Q_sols, "My solution");
+  return true;
 }
 
 /**
@@ -224,7 +232,7 @@ bool testInverseKinematics(const double* T)
  */
 inline void throwAssertionFailedException()
 {
-    throw AssertionFailedException();
+  throw AssertionFailedException();
 }
 
 /**
@@ -232,30 +240,25 @@ inline void throwAssertionFailedException()
  *        angles in degrees. The function will test the forward kinematics
  *        and inverse kinematics, and compare the results with the standard
  *        solutions (provided from `tm_kin.h`).
- * @param Q1 The joint angle of the 1st joint in degrees.
- * @param Q2 The joint angle of the 2nd joint in degrees.
- * @param Q3 The joint angle of the 3rd joint in degrees.
- * @param Q4 The joint angle of the 4th joint in degrees.
- * @param Q5 The joint angle of the 5th joint in degrees.
- * @param Q6 The joint angle of the 6th joint in degrees.
  * @throw `AssertionFailedException` if the test fails.
  */
 void addTestInDegree(const double& Q1, const double& Q2, const double& Q3,
                      const double& Q4, const double& Q5, const double& Q6)
 {
-    try {
-        // [Forward kinematics]
-        double Q[6] = { deg2Rad(Q1), deg2Rad(Q2), deg2Rad(Q3),
-                        deg2Rad(Q4), deg2Rad(Q5), deg2Rad(Q6) };
-        ROS_ASSERT_CMD(testForwardKinematics(Q), throwAssertionFailedException());
-        
-        // [Inverse kinematics]
-        double T[16];
-        tm_kinematics::forward(Q, T);
-        ROS_ASSERT_CMD(testInverseKinematics(T), throwAssertionFailedException());
-    } catch (const AssertionFailedException& e) {
-        throw e;        
-    }
+  try {
+    // [Forward kinematics]
+    double Q[6] = { deg2Rad(Q1), deg2Rad(Q2), deg2Rad(Q3),
+                    deg2Rad(Q4), deg2Rad(Q5), deg2Rad(Q6) };
+    ROS_ASSERT_CMD(testForwardKinematics(Q), throwAssertionFailedException());
+    
+    // [Inverse kinematics]
+    double T[16];
+    tm_kinematics::forward(Q, T);
+    ROS_ASSERT_CMD(testStandardInverseKinematics(T), throwAssertionFailedException());
+    ROS_ASSERT_CMD(testMyInverseKinematics(T), throwAssertionFailedException());
+  } catch (const AssertionFailedException& e) {
+    throw e;        
+  }
 }
 
 /**
@@ -263,71 +266,58 @@ void addTestInDegree(const double& Q1, const double& Q2, const double& Q3,
  *        angles in radians. The function will test the forward kinematics
  *        and inverse kinematics, and compare the results with the standard
  *        solutions (provided from `tm_kin.h`).
- * @param Q1 The joint angle of the 1st joint in radians.
- * @param Q2 The joint angle of the 2nd joint in radians.
- * @param Q3 The joint angle of the 3rd joint in radians.
- * @param Q4 The joint angle of the 4th joint in radians.
- * @param Q5 The joint angle of the 5th joint in radians.
- * @param Q6 The joint angle of the 6th joint in radians.
  * @throw `AssertionFailedException` if the test fails.
  */
 void addTestInRadian(const double& Q1, const double& Q2, const double& Q3,
                      const double& Q4, const double& Q5, const double& Q6)
 {
-    try {
-        // [Forward kinematics]
-        double Q[6] = { Q1, Q2, Q3, Q4, Q5, Q6 };
-        ROS_ASSERT_CMD(testForwardKinematics(Q), throwAssertionFailedException());
-        
-        // [Inverse kinematics]
-        double T[16];
-        tm_kinematics::forward(Q, T);
-        ROS_ASSERT_CMD(testInverseKinematics(T), throwAssertionFailedException());
-    } catch (const AssertionFailedException& e) {
-        throw e;        
-    }
+  try {
+    // [Forward kinematics]
+    double Q[6] = { Q1, Q2, Q3, Q4, Q5, Q6 };
+    ROS_ASSERT_CMD(testForwardKinematics(Q), throwAssertionFailedException());
+    
+    // [Inverse kinematics]
+    double T[16];
+    tm_kinematics::forward(Q, T);
+    ROS_ASSERT_CMD(testStandardInverseKinematics(T), throwAssertionFailedException());
+    ROS_ASSERT_CMD(testMyInverseKinematics(T), throwAssertionFailedException());
+  } catch (const AssertionFailedException& e) {
+    throw e;
+  }
 }
 
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "test_kinematics");
+  ros::init(argc, argv, "test_kinematics");
 
-    try {
-        ROS_INFO("--------------------------------------------------");
+  try {
+    ROS_INFO("--------------------------------------------------");
 
-        // Test 1: HOME pose
-        addTestInDegree(0, -42, 113, -71, 90, 0);
+    TMKinematics::TMKinematicsPtr kinematics_ptr = std::make_shared<TMKinematics>(marslite::control::TM5_700);
 
-        // Test 2: DEFAULT1 pose
-        addTestInDegree(0, 0, 90, 0, 90, 0);
+    TMKinematics::TransformationMatrix home = kinematics_ptr->forwardKinematics(marslite::pose::HOME.head(6));
+    kinematics_ptr->printTransformationMatrix(home, "Home pose");
+    kinematics_ptr->printIKSolutionInDegree(kinematics_ptr->inverseKinematics(home), "Home pose");
+    
+    home(2, 3) += 0.03;
+    kinematics_ptr->printTransformationMatrix(home, "Home pose (moved forward by 3 cm)");
+    kinematics_ptr->printIKSolutionInDegree(kinematics_ptr->inverseKinematics(home), "Home pose (moved forward by 3 cm)");
 
-        // Test 3: DEFAULT2 pose
-        addTestInDegree(0, 0, 90, -90, 90, 0);
+    home(2, 3) -= 0.06;
+    kinematics_ptr->printTransformationMatrix(home, "Home pose (moved backward by 3 cm)");
+    kinematics_ptr->printIKSolutionInDegree(kinematics_ptr->inverseKinematics(home), "Home pose (moved backward by 3 cm)");
 
-        // Test 4: DEFAULT3 pose
-        addTestInDegree(0, 0, 90, 90, -90, 0);
 
-        // Test 5: customized pose
-        addTestInDegree(20, -30, 100, -60, 80, 10);
 
-        // Test 6: customized pose
-        addTestInDegree(-10, 20, 80, -40, 70, 5);
+    ROS_INFO("All tests passed!");
 
-        // Test 7: customized pose
-        addTestInDegree(30, -40, 120, -80, 100, 15);
+  } catch (const ConstructorInitializationFailedException& e) {
+    ROS_ERROR("%s", e.what());
+  } catch (const AssertionFailedException& e) {
+    ROS_ERROR("%s", e.what());
+  }
 
-        // Test 8: customized pose
-        addTestInDegree(-20, 30, 100, -60, 0, 10);
-
-        ROS_INFO("All tests passed!");
-
-    } catch (const ConstructorInitializationFailedException& e) {
-        ROS_ERROR("%s", e.what());
-    } catch (const AssertionFailedException& e) {
-        ROS_ERROR("%s", e.what());
-    }
-
-    ros::shutdown();
-    return 0;
+  ros::shutdown();
+  return 0;
 }

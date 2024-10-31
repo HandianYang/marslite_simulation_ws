@@ -2,44 +2,44 @@
 # Specific joint properties can be changed with the keys [max_position, min_position, max_velocity, max_acceleration]
 # Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits]
 joint_limits:
-  tm_elbow_joint:
-    min_position: -2.67035
-    max_position: 2.67035
+  tm_shoulder_1_joint:  # first joint
+    min_position: -2.00713  # -115°
+    max_position: 2.26893   #  130°
     has_velocity_limits: true
     max_velocity: 3.15
     has_acceleration_limits: false
     max_acceleration: 0
-  tm_shoulder_1_joint:
-    min_position: -2.00713
-    max_position: 2.26893
+  tm_shoulder_2_joint:  # second joint
+    min_position: -0.73304  #  -42°
+    max_position: 2.18166   #  125°
     has_velocity_limits: true
     max_velocity: 3.15
     has_acceleration_limits: false
     max_acceleration: 0
-  tm_shoulder_2_joint:
-    min_position: -0.73304
-    max_position: 2.18166
+  tm_elbow_joint:       # third joint
+    min_position: -2.67035  # -153°
+    max_position: 2.67035   #  153°
     has_velocity_limits: true
     max_velocity: 3.15
     has_acceleration_limits: false
     max_acceleration: 0
-  tm_wrist_1_joint:
-    min_position: -3.31612
-    max_position: 3.31612
+  tm_wrist_1_joint:     # fourth joint
+    min_position: -3.31612  # -190°
+    max_position: 3.31612   #  190°
     has_velocity_limits: true
     max_velocity: 3.2
     has_acceleration_limits: false
     max_acceleration: 0
-  tm_wrist_2_joint:
-    min_position: -3.10669
-    max_position: 3.10669
+  tm_wrist_2_joint:     # fifth joint
+    min_position: -3.10669  # -178°
+    max_position: 3.10669   #  178°
     has_velocity_limits: true
     max_velocity: 3.2
     has_acceleration_limits: false
     max_acceleration: 0
-  tm_wrist_3_joint:
-    min_position: -3.14159
-    max_position: 3.14159
+  tm_wrist_3_joint:     # sixth joint
+    min_position: -3.14159  # -180°
+    max_position: 3.14159   #  180°
     has_velocity_limits: true
     max_velocity: 3.2
     has_acceleration_limits: false

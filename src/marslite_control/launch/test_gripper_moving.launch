@@ -8,9 +8,8 @@
     <arg name="realsense_enabled" value="$(arg realsense_enabled)"/>
   </include>
 
-  <arg name="message_enabled" default="true"/>
-  <node name="test_default_pose_planning" pkg="marslite_control" type="test_default_pose_planning" output="screen">
-    <param name="message_enabled" value="$(arg message_enabled)"/>
+  <node name="test_gripper_moving" pkg="marslite_control" type="test_gripper_moving" output="screen">
+    <param name="message_enabled" value="true"/>
     <param name="use_joystick" value="false"/>
   </node>
 </launch>

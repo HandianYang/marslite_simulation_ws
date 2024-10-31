@@ -1,28 +1,24 @@
 /**
- * @file model_predictive_control.h
- * @author Handian Yang
- * @copyright Released under the terms of the GPLv3.0 or later
- * @date 2024
+ * marslite_simulation_ws/marslite_control/include/model_predictive_control.h
  * 
- * @brief The header file for Model Predictive Control (MPC) function for marslite robots.
- * @note `model_predictive_control.h` is part of `marslite_simulation_ws`.
+ * Copyright (C) 2024 Handian Yang
  * 
- * `marslite_simulation_ws` is free software: you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License as published
- *  by the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * 
- * `marslite_simulation_ws` is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
- *  Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License along
- *  with `marslite_simulation_ws`. If not, see <https://www.gnu.org/licenses/>. 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MARSLITE_CONTROL_MPC_H_
-#define MARSLITE_CONTROL_MPC_H_
+#ifndef MARSLITE_CONTROL_MODEL_PREDICTIVE_CONTROL_H_
+#define MARSLITE_CONTROL_MODEL_PREDICTIVE_CONTROL_H_
 
 #include <ros/ros.h>
 
@@ -52,119 +48,134 @@ namespace control {
 
 class ModelPredictiveControl {
 public:
-    using MPCClassPtr = std::shared_ptr<ModelPredictiveControl>;
+  using MPCPtr = std::shared_ptr<ModelPredictiveControl>;
+  
+  /**
+   * @brief Constructor for the MPC controller.
+   * @throw `marslite::exceptions::ConstructorInitializationFailedException`
+   *       if the constructor fails to initialize.
+   */
+  explicit ModelPredictiveControl();
 
-    using StateVector = Eigen::Matrix<double, MPC_STATE_SIZE, 1>;
-    using InputVector = Eigen::Matrix<double, MPC_INPUT_SIZE, 1>;
-    
-    /**
-     * @brief Constructor for the MPC controller.
-     * 
-     * This constructor initializes the MPC controller with the given `ros::NodeHandle`.
-     *
-     * @param nh The `ros::NodeHandle` to be used by the MPC controller.
-     * @throw `marslite::exceptions::ConstructorInitializationFailedException`
-     *       if the constructor fails to initialize.
-     */
-    explicit ModelPredictiveControl();
+  /**
+   * @brief Sets the initial pose for the Marslite MPC.
+   *
+   * This function sets the initial pose for the MPC controller. The initial pose
+   *  is represented by a matrix of size `MPC_STATE_SIZE x 1`, where
+   *  `MPC_STATE_SIZE` is the size of the state vector.
+   *
+   * @param initialPose The initial pose to set. Defaults to `marslite::pose::INITIAL`.
+   * @return True if the initial pose is successfully set.
+   */
+  inline bool setInitialPose(const StateVector& initial_pose = marslite::pose::INITIAL)
+  {
+    if (this->isOutOfBound(initial_pose)) {
+      return false;
+    }
+    x0_ = initial_pose;
+    return true;
+  }
 
-    /**
-     * @brief Sets the initial pose for the Marslite MPC.
-     *
-     * This function sets the initial pose for the Marslite Model Predictive Control (MPC) algorithm.
-     * The initial pose is used as the starting point for the MPC optimization process.
-     *
-     * @param initialPose The initial pose to set. Defaults to `marslite::pose::INITIAL`.
-     */
-    void setInitialPose(const StateVector& initialPose = marslite::pose::INITIAL);
+  /**
+   * @brief Sets the target pose for the MPC controller.
+   *
+   * This function sets the target pose for the MPC controller. The target pose
+   *  is represented by a matrix of size `MPC_STATE_SIZE x 1`, where
+   *  `MPC_STATE_SIZE` is the size of the state vector.
+   *
+   * @param targetPose The target pose vector. Defaults to `marslite::pose::INITIAL`.
+   */
+  inline bool setTargetPose(const StateVector& target_pose = marslite::pose::INITIAL)
+  {
+    if (this->isOutOfBound(target_pose)) {
+      return false;
+    }
+    xRef_ = target_pose;
+    return true;
+  }
 
-    /**
-     * @brief Sets the target pose for the MPC controller.
-     *
-     * This function sets the target pose for the MPC controller. The target pose is represented
-     * by a matrix of size MPC_STATE_SIZE x 1, where MPC_STATE_SIZE is the size of the state vector.
-     *
-     * @param targetPose The target pose vector. Defaults to `marslite::pose::INITIAL`.
-     */
-    void setTargetPose(const StateVector& targetPose = marslite::pose::INITIAL);
+  inline bool isOutOfBound(const StateVector& pose) const
+  {
+    return (pose.array() > xMax_.array()).any() || (pose.array() < xMin_.array()).any();
+  }
 
-    /**
-     * @brief Initialize the QP solver.
-     * @return True if the QP solver is successfully initialized.
-     * @note (1) The function is activated by the constructor. Therefore, it is not necessary to call this function.
-     * @note (2) DO NOT try to use QP solver if this function returns `FALSE`.
-    */
-    bool initializeQPSolver();
+  /**
+   * @brief Initialize the QP solver.
+   * @return True if the QP solver is successfully initialized.
+   * @note (1) The function is called within the constructor. It is not
+   *       necessary to manually call this function.
+   * @note (2) DO NOT try to use QP solver if this function returns `FALSE`.
+  */
+  bool initializeQPSolver();
 
-    /**
-     * @brief Plan the trajectory of the robot using QP solver.
-     * @return True if the trajectory can be executed, and it is executed successfully.
-     * @note ALWAYS remember to initialize the QP solver by invoking `QPSolverInitialization()`
-     *  function before solving the problem.
-    */
-    bool solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectoryWaypoints);
-
-private:
-    /* ************************************ *
-     *            MPC parameters            *
-     * ************************************ */
-    Eigen::Matrix<double, MPC_STATE_SIZE, MPC_STATE_SIZE> A_;   // dynamic matrix
-    Eigen::Matrix<double, MPC_STATE_SIZE, MPC_INPUT_SIZE> B_;   // control matrix
-    StateVector xMax_, xMin_;      // state inequality constraints
-    InputVector uMax_, uMin_;      // input inequality constraints
-    InputVector aMax_, aMin_;      // input inequality constraints
-    Eigen::DiagonalMatrix<double, MPC_STATE_SIZE> Q_;           // weight matrix for state vectors
-    Eigen::DiagonalMatrix<double, MPC_INPUT_SIZE> R_;           // weight matrix for input vectors
-    StateVector x0_;               // initial state space
-    StateVector xRef_;             // reference state space
-    
-    /* ************************************ *
-     *            QP parameters             *
-     * ************************************ */
-    Eigen::SparseMatrix<double> hessianMatrix_;     // hessian matrix (in size `SS*(W+1) + IS*W` by `SS*(W+1) + IS*W`)
-    Eigen::SparseMatrix<double> constraintMatrix_;  // constraint matrix (in size `2*SS*(W+1) + 2*IS*W` by `SS*(W+1) + IS*W`)
-    Eigen::VectorXd gradient_;      // gradient vector (in size `SS*(W+1) + IS*W` by `1`)
-    Eigen::VectorXd lowerBound_;    // lower inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`) 
-    Eigen::VectorXd upperBound_;    // upper inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`)
-
-    OsqpEigen::Solver solver_;      // QP solver
+  /**
+   * @brief Plan the trajectory of the robot using QP solver.
+   * @return True if the trajectory can be executed, and it is executed successfully.
+   * @note Call `initializeQPSolver()` first before calling this function.
+  */
+  bool solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectoryWaypoints);
 
 private:
+  /* ************************************ *
+    *            MPC parameters            *
+    * ************************************ */
+  Eigen::Matrix<double, MPC_STATE_SIZE, MPC_STATE_SIZE> A_;   // dynamic matrix
+  Eigen::Matrix<double, MPC_STATE_SIZE, MPC_INPUT_SIZE> B_;   // control matrix
+  StateVector xMax_, xMin_;      // state inequality constraints
+  InputVector uMax_, uMin_;      // input inequality constraints
+  InputVector aMax_, aMin_;      // input inequality constraints
+  Eigen::DiagonalMatrix<double, MPC_STATE_SIZE> Q_;           // weight matrix for state vectors
+  Eigen::DiagonalMatrix<double, MPC_INPUT_SIZE> R_;           // weight matrix for input vectors
+  StateVector x0_;               // initial state space
+  StateVector xRef_;             // reference state space
+  
+  /* ************************************ *
+    *            QP parameters             *
+    * ************************************ */
+  Eigen::SparseMatrix<double> hessianMatrix_;     // hessian matrix (in size `SS*(W+1) + IS*W` by `SS*(W+1) + IS*W`)
+  Eigen::SparseMatrix<double> constraintMatrix_;  // constraint matrix (in size `2*SS*(W+1) + 2*IS*W` by `SS*(W+1) + IS*W`)
+  Eigen::VectorXd gradient_;      // gradient vector (in size `SS*(W+1) + IS*W` by `1`)
+  Eigen::VectorXd lowerBound_;    // lower inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`) 
+  Eigen::VectorXd upperBound_;    // upper inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`)
 
-    /* ********************************************** *
-     *                MPC/QP functions                *
-     * ********************************************** */
+  OsqpEigen::Solver solver_;      // QP solver
 
-    /**
-     * @brief Set dynamic matrices `A_` and `B_` for MPC problems.
-     * 
-     * The size of the dynamic matrix `A_` is `MPC_STATE_SIZE` by `MPC_STATE_SIZE`, and
-     *  the size of the control matrix `B_` is `MPC_STATE_SIZE` by `MPC_INPUT_SIZE`.
-     * 
-     * @note The function requires `A_` and `B_` to be `Eigen::Matrix` in `double` type.
-    */
-    void setDynamicsMatrices();
+private:
 
-    /**
-     * @brief Set state and input inequality constraints for MPC problems.
-     * 
-     * The size of the state inequality vectors `xMax_` and `xMin_` are `MPC_STATE_SIZE` by 1, and
-     *  the size of the input inequality vectors `uMax_`, `uMin_`, `aMax_`, and `aMin_` are
-     *  `MPC_INPUT_SIZE` by 1.
-     * 
-     * @note The function requires all inequality vectors to be `Eigen::Matrix` in `double` type.
-    */
-    void setInequalityConstraints();
+  /* ********************************************** *
+    *                MPC/QP functions                *
+    * ********************************************** */
 
-    /**
-     * @brief Set weight matrices `Q_` and `R_` for MPC problems.
-     * 
-     * The two weight matrices `Q_` and `R_` are symmetric positive definite matrices with size
-     *  `MPC_STATE_SIZE` by `MPC_STATE_SIZE` and `MPC_INPUT_SIZE` by `MPC_INPUT_SIZE`, respectively.
-     * 
-     * @note The function requires `Q_` and `R_` to be `Eigen::Matrix` in `double` type.
-    */
-    void setWeightMatrices();
+  /**
+   * @brief Set dynamic matrices `A_` and `B_` for MPC problems.
+   * 
+   * The size of the dynamic matrix `A_` is `MPC_STATE_SIZE` by `MPC_STATE_SIZE`, and
+   *  the size of the control matrix `B_` is `MPC_STATE_SIZE` by `MPC_INPUT_SIZE`.
+   * 
+   * @note The function requires `A_` and `B_` to be `Eigen::Matrix` in `double` type.
+  */
+  void setDynamicsMatrices();
+
+  /**
+   * @brief Set state and input inequality constraints for MPC problems.
+   * 
+   * The size of the state inequality vectors `xMax_` and `xMin_` are `MPC_STATE_SIZE` by 1, and
+   *  the size of the input inequality vectors `uMax_`, `uMin_`, `aMax_`, and `aMin_` are
+   *  `MPC_INPUT_SIZE` by 1.
+   * 
+   * @note The function requires all inequality vectors to be `Eigen::Matrix` in `double` type.
+  */
+  void setInequalityConstraints();
+
+  /**
+   * @brief Set weight matrices `Q_` and `R_` for MPC problems.
+   * 
+   * The two weight matrices `Q_` and `R_` are symmetric positive definite matrices with size
+   *  `MPC_STATE_SIZE` by `MPC_STATE_SIZE` and `MPC_INPUT_SIZE` by `MPC_INPUT_SIZE`, respectively.
+   * 
+   * @note The function requires `Q_` and `R_` to be `Eigen::Matrix` in `double` type.
+  */
+  void setWeightMatrices();
 
     /**
      * @brief Set hessian matrix from weight matrices `Q_` and `R_` for QP problems.
@@ -252,4 +263,4 @@ private:
 
 } // namespace marslite
 
-#endif  // #ifndef MARSLITE_CONTROL_MPC_H_
+#endif  // #ifndef MARSLITE_CONTROL_MODEL_PREDICTIVE_CONTROL_H_

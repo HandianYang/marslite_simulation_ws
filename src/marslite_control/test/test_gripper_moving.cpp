@@ -1,5 +1,5 @@
 /**
- * marslite_simulation_ws/test/test_default_pose_planning.cpp
+ * marslite_simulation_ws/test/test_gripper_moving.cpp
  * 
  * Copyright (C) 2024 Handian Yang
  * 
@@ -25,10 +25,11 @@ using marslite::control::MarsliteControl;
 #include "marslite_properties/Exception.h"
 using marslite::exception::ConstructorInitializationFailedException;
 using marslite::exception::TimeOutException;
+using marslite::exception::TransformNotFoundException;
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "test_default_pose_planning");
+  ros::init(argc, argv, "test_gripper_moving");
 
   ros::AsyncSpinner spinner(0);
   spinner.start();
@@ -36,39 +37,39 @@ int main(int argc, char** argv)
   try {
     MarsliteControl::ControlPtr control_ptr = std::make_shared<MarsliteControl>();
 
-    // Test 1: planning to the home pose of marslite robots
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::HOME);
+    // Preparation: move the robot to the HOME pose
+    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
+    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::HOME));
     ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_INFO("Preparation done.");
     
-    // Test 2: planning to the default1 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT1);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    // Test 1: Move the gripper forward and backward by 0.1 meters
+    ROS_ASSERT(control_ptr->moveGripperForward(0.2));
+    ROS_ASSERT(control_ptr->moveGripperBackward(0.1));
+    ROS_INFO("Test 1 passed.");
 
-    // Test 3: planning to the default2 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT2);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    // Test 2: Move the gripper left and right by 0.1 meters
+    ROS_ASSERT(control_ptr->moveGripperLeft(0.1));
+    ROS_ASSERT(control_ptr->moveGripperRight(0.1));
+    ROS_ASSERT(control_ptr->moveGripperRight(0.1));
+    ROS_ASSERT(control_ptr->moveGripperLeft(0.1));
+    ROS_INFO("Test 2 passed.");
 
-    // Test 4: planning to the default3 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT3);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
-
-    // Test 5: planning to the default4 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT4);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
-
-    // Test 6: planning to the home pose of marslite robots
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::HOME);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    // Test 3: Move the gripper up and down by 0.1 meters
+    ROS_ASSERT(control_ptr->moveGripperUp(0.1));
+    ROS_ASSERT(control_ptr->moveGripperDown(0.1));
+    ROS_ASSERT(control_ptr->moveGripperDown(0.1));
+    ROS_ASSERT(control_ptr->moveGripperUp(0.1));
+    ROS_INFO("Test 3 passed.");
 
   } catch (const ConstructorInitializationFailedException& ex) {
+    // Failed to initialize the control class
     ROS_ERROR_STREAM(ex.what());
   } catch (const TimeOutException& ex) {
+    // Failed to subscribe to some topics or connect to the action server
+    ROS_ERROR_STREAM(ex.what());
+  } catch (const TransformNotFoundException& ex) {
+    // Failed to look up the transform between two frames
     ROS_ERROR_STREAM(ex.what());
   }
 
