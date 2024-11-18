@@ -7,21 +7,23 @@ add_compile_options(-std=c++14)
 
 project(marslite_control)
 
+set(Eigen3_DIR /usr/local/share/eigen3/cmake)
+set(OsqpEigen_DIR /usr/local/lib/cmake/OsqpEigen)
+
 ################################################################################
 # Find catkin packages and libraries for catkin and system dependencies
 ################################################################################
 find_package(catkin REQUIRED COMPONENTS
   actionlib
+  Eigen3
   control_msgs
   geometry_msgs
+  OsqpEigen
   roscpp
   sensor_msgs
   tf
   trajectory_msgs
 )
-
-find_package(OsqpEigen)
-find_package(Eigen3)
 
 ################################################################################
 # Setup for python modules and scripts

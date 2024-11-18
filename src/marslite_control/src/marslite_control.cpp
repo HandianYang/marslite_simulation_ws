@@ -159,7 +159,28 @@ bool MarsliteControl::planTrajectoryWithQPSolver()
 
   // Send the trajectory goal to the server, and wait for the result
   trajectory_action_client_->sendGoal(trajectory_goal_);
-  trajectory_action_client_->waitForResult(ros::Duration(loop_rate_)); // TODO: Set the timeout
+  trajectory_action_client_->waitForResult(ros::Duration(loop_rate_));
+
+  // Check if the action was successful
+  ROS_INFO_STREAM_COND(debug_msg_enabled_, "  Planning result: " << trajectory_action_client_->getState().toString());
+  if (trajectory_action_client_->getState() == actionlib::SimpleClientGoalState::LOST) {
+    return false;
+  }
+
+  // Clear the trajectory goal before the next planning
+  trajectory_goal_.trajectory.points.clear();
+  return true;
+}
+
+bool MarsliteControl::planTrajectoryWithQPSolver(const ros::Duration& timeout)
+{
+  // Solve the trajectory planning problem
+  if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
+    return false;
+
+  // Send the trajectory goal to the server, and wait for the result
+  trajectory_action_client_->sendGoal(trajectory_goal_);
+  trajectory_action_client_->waitForResult(timeout);
 
   // Check if the action was successful
   ROS_INFO_STREAM_COND(debug_msg_enabled_, "  Planning result: " << trajectory_action_client_->getState().toString());

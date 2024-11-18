@@ -159,6 +159,13 @@ public:
   bool planTrajectoryWithQPSolver();
 
   /**
+   * @brief Plan the trajectory of the robot using QP solver with the given timeout.
+   *        The planner waits for the result within the specified timeout duration.
+   * @return True if the trajectory can be executed, and it is executed successfully.
+  */
+  bool planTrajectoryWithQPSolver(const ros::Duration& timeout);
+
+  /**
    * @brief Get the angle value of the first joint (i.e. `tm_shoulder_1_joint`)
    *        of the TM5 robotic arm.
    * @param joint_state message in JointStateConstPtr type.
