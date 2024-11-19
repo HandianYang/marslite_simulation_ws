@@ -35,19 +35,19 @@ goal_dir=${current_dir//$host_dir/$container_dir}
 echo "[IMAGE:TAG] $DOCKER_IMAGE:$DOCKER_DEFAULT_TAG"
 
 # Check if the Docker container exists
-if [ "$(docker ps -a -q -f name=$CONTAINER_NAME)" ]; then
+if [ "$(docker ps -a -q -f name=$CONTAINER_DEFAULT_NAME)" ]; then
     # The container exists, check if it's running or stopped
-    if [ "$(docker inspect -f '{{.State.Running}}' $CONTAINER_NAME)" == "true" ]; then
-        echo "The \"$CONTAINER_NAME\" container is RUNNING, so enter it."
-        docker exec -it ${CONTAINER_NAME} bash
+    if [ "$(docker inspect -f '{{.State.Running}}' $CONTAINER_DEFAULT_NAME)" == "true" ]; then
+        echo "The \"$CONTAINER_DEFAULT_NAME\" container is RUNNING, so enter it."
+        docker exec -it ${CONTAINER_DEFAULT_NAME} bash
     else
-        echo "The \"$CONTAINER_NAME\" container is STOPPED, so restart it."
-        docker start -ai ${CONTAINER_NAME}
+        echo "The \"$CONTAINER_DEFAULT_NAME\" container is STOPPED, so restart it."
+        docker start -ai ${CONTAINER_DEFAULT_NAME}
     fi
 else
-    echo "The \"$CONTAINER_NAME\" container DOES NOT EXIST, so create a new container."
+    echo "The \"$CONTAINER_DEFAULT_NAME\" container DOES NOT EXIST, so create a new container."
     ${DOCKER_CMD} run -it --privileged ${NVIDIA_SUPPORT_OPTION} \
-        --name ${CONTAINER_NAME} \
+        --name ${CONTAINER_DEFAULT_NAME} \
         --net=host \
         --env DISPLAY=$DISPLAY \
         --env QT_X11_NO_MITSHM=1 \
