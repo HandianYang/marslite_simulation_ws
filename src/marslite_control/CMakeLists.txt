@@ -7,7 +7,7 @@ add_compile_options(-std=c++14)
 
 project(marslite_control)
 
-set(Eigen3_DIR /usr/local/share/eigen3/cmake)
+set(Eigen3_DIR /usr/lib/cmake/eigen3)
 set(OsqpEigen_DIR /usr/local/lib/cmake/OsqpEigen)
 
 ################################################################################

@@ -3,7 +3,7 @@ xhost +local:docker
 
 # Setup specific docker image and tag
 DOCKER_IMAGE="handianyang/marslite-simulation"
-DOCKER_DEFAULT_TAG="cuda12.1.1-pytorch2.5.1-nvidia535-noetic"
+DOCKER_DEFAULT_TAG="cuda12.1.1-pytorch2.5.1-noetic"
 CONTAINER_DEFAULT_NAME="marslite"
 
 # Setup the style of color
@@ -12,19 +12,21 @@ COLOR_YELLOW='\033[0;33m'
 COLOR_NC='\033[0m'
 
 # Check the command 'nvidia-docker' existed or not
-ret_code="$(command -v nvidia-docker)"
-if [ -z "$ret_code" ]; then
-    if [ -z "$(command -v nvidia-container-cli)" ]; then
-        NVIDIA_SUPPORT_OPTION="--gpus all "
-    else
-        NVIDIA_SUPPORT_OPTION=""
-    fi
-    DOCKER_CMD="docker"
-else
-    DOCKER_CMD="nvidia-docker"
-    NVIDIA_SUPPORT_OPTION=""
-fi
-
+#ret_code="$(command -v nvidia-docker)"
+#if [ -z "$ret_code" ]; then
+#    if [ -z "$(command -v nvidia-container-cli)" ]; then
+#        NVIDIA_SUPPORT_OPTION="--gpus all "
+#    else
+#        NVIDIA_SUPPORT_OPTION=""
+#    fi
+#    DOCKER_CMD="docker"
+#else
+#    DOCKER_CMD="nvidia-docker"
+#    NVIDIA_SUPPORT_OPTION=""
+#fi
+DOCKER_CMD="docker"
+NVIDIA_SUPPORT_OPTION="--gpus all"
+#echo "$DOCKER_CMD $NVIDIA_SUPPORT_OPTION"
 
 # Find current directory and transfer it to container directory for Docker
 current_dir="$(pwd)"
