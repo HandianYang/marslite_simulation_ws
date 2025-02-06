@@ -67,7 +67,8 @@ include_directories(
 
 # Install Python scripts
 catkin_install_python(PROGRAMS
-  scripts/object_detection_viewer.py
+  examples/object_detection_viewer.py
+  examples/opencv_pointcloud_viewer.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

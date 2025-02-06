@@ -1,3 +1,5 @@
+#!/usr/bin/env python3.10
+import rospy
 import pyrealsense2 as rs
 import supervision as sv
 import numpy as np
@@ -6,6 +8,9 @@ from pathlib import Path
 from ultralytics import YOLO
 
 def main():
+    rospy.init_node('object_detection_viewer', anonymous=True)
+
+    # Load model and annotators
     model_path = Path(__file__).parent.parent / "weights/best_v2.pt"
     model = YOLO(model_path)
     box_annotator = sv.BoxAnnotator()
@@ -34,28 +39,33 @@ def main():
     pipeline.start(config)
 
     try:
-        while True:
+        while not rospy.is_shutdown():
             frames = pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
             if not color_frame:
                 continue
 
-            # Convert images to numpy arrays
             color_image = np.asanyarray(color_frame.get_data())
-            results = model(color_image, verbose=False)[0]
+            results = model(color_image, verbose=False, conf=0.75)[0]
             detections = sv.Detections.from_ultralytics(results)
-            color_image = box_annotator.annotate(color_image, detections = detections)
-            color_image = label_annotator.annotate(color_image, detections = detections)
+            color_image = box_annotator.annotate(color_image, detections=detections)
+            color_image = label_annotator.annotate(color_image, detections=detections)
 
             # Show images
             cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
             cv2.imshow('RealSense', color_image)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+            
+            rospy.Rate(25).sleep()
 
     finally:
         # Stop streaming
         pipeline.stop()
     
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except rospy.ROSInterruptException:
+        pass
+        

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <node name="opencv_pointcloud_viewer" pkg="product_detection" type="opencv_pointcloud_viewer.py" output="screen">
+  </node>
+</launch>
