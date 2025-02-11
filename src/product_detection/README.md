@@ -7,9 +7,9 @@ Hardware
 
 Software
 * Docker image: `handianyang/marslite-simulation`
-* Python 3.10
+* Python 3.10 virtual environment
     ```bash
-    $ source src/product_detection/venv-3-10/bin/activate
+    $ source venv-3-10/bin/activate
     ```
 
 ## Try examples

@@ -12,30 +12,29 @@
 
 ## Setup
 
-### Install Docker engine
+### 1. Install Docker engine
 
 The required packages and tools of this simulator system could be easily accessed by specifying the Docker image. With the usage of Docker images, users do not need to worry about any possibility to encounter problems related to incompatible software tools. To completely understand what Docker is, please refer to [this webpage](https://docs.docker.com/get-started/).
 
 If you have not installed Docker engine on your Ubuntu desktop, please click [this](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) to follow the instructions in the official Docker documents.
 
-### Pull the specified Docker image from Docker Hub
+### 2. Pull the specified Docker image from Docker Hub
 
-To utilize the simulator system, users are required to download my designed image. Run the following command to obtain the latest version of my Docker image (click [here](https://hub.docker.com/repository/docker/handianyang/marslite_simulation/general) to check the tagname):
-```Shell
-docker pull handianyang/marslite_simulation:v1.2.0-T265
+To utilize the simulator system, users are required to download my designed image. Run the following command to obtain the latest version of my Docker image (click [here](https://hub.docker.com/r/handianyang/marslite-simulation/tags) to check the tagname):
+```bash
+docker pull handianyang/marslite_simulation:cuda12.1.1-pytorch2.5.1-noetic
 ```
 
-### Enter the Docker container
+### 3. Enter the Docker container
 
-Open a new terminal window (or press `Ctrl+Alt+t`) and reach to the root of the `marslite_simulation_ws` workspace directory (assume you have the workspace directory placed under `~` directory):
-```Shell
+Open a new terminal window (or press `Ctrl+Alt+t`) and reach to the root of the `marslite_simulation_ws` workspace directory:
+```bash
+# Assume the workspace directory is placed under `~` directory
 cd ~/marslite_simulation_ws
 ```
 
-#### Enter a container with the latest image tag
-
 Run the following command to enter the Docker container based on the latest tag of `handianyang/marslite_simulation` image:
-```Shell
+```bash
 source docker_run.sh
 ```
 
@@ -46,21 +45,32 @@ Specifically, the above bash script can be executed when you expect to:
 - enter a running container (when you work with multiple terminal windows)
 - restart an exited container (when you've left the container previously)
 
-#### (Optional) Enter a container with the specific image tag
 
-You could specify the previous version of the image by adding version id (consecutive numbers with no dots) as parameters. 
-```Shell
-source docker_run.sh <tag_number>
+### 4. Create a Python3.10 virtual environment
+
+Since we utilized Python scripts for object detection features, the best practice is to create a Python virtual environment on your own. The recommended (and tested) version of Python is **3.10**.
+
+First, make sure you already have Python3.10 installed:
+```bash
+ls /usr/bin/python*
 ```
 
-For example, to invoke a container with version "v1.1.0-MPC", simply run:
-```Shell
-source docker_run.sh 110
+If you can't find `/usr/bin/python3.10`, install it (refer to [Python official websites](https://www.python.org/downloads/)).
+
+Create an empty Python3.10 virtual environment under the root of the workspace directory:
+```bash
+python3.10 -m venv venv-3-10
 ```
 
-This command creates a Docker container named `marslite_prev` and guides you in.
+Activate (Enter) the virtual environment:
+```bash
+source venv-3-10/bin/activate
+```
 
-**[Note]** If you work with parallel terminals, ALWAYS remember to include the `<tag_number>` right behind the command (`source docker_run.sh <tag_number>`) for EVERY terminal window.
+Install dependencies inside the environment from `requirements.txt`:
+```bash
+pip install -r requirements.txt
+```
 
 ## Development
 
