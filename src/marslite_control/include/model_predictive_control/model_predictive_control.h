@@ -69,9 +69,8 @@ public:
    */
   inline bool setInitialPose(const StateVector& initial_pose = marslite::pose::INITIAL)
   {
-    if (this->isOutOfBound(initial_pose)) {
+    if (this->isOutOfBound(initial_pose))
       return false;
-    }
     x0_ = initial_pose;
     return true;
   }
@@ -87,16 +86,16 @@ public:
    */
   inline bool setTargetPose(const StateVector& target_pose = marslite::pose::INITIAL)
   {
-    if (this->isOutOfBound(target_pose)) {
+    if (this->isOutOfBound(target_pose))
       return false;
-    }
     xRef_ = target_pose;
     return true;
   }
 
   inline bool isOutOfBound(const StateVector& pose) const
   {
-    return (pose.array() > xMax_.array()).any() || (pose.array() < xMin_.array()).any();
+    return (pose.array() > xMax_.array()).any() ||
+           (pose.array() < xMin_.array()).any();
   }
 
   /**
@@ -113,9 +112,11 @@ public:
    * @return True if the trajectory can be executed, and it is executed successfully.
    * @note Call `initializeQPSolver()` first before calling this function.
   */
-  bool solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectoryWaypoints);
+  bool solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectory_waypoints);
 
 private:
+  OsqpEigen::Solver solver_;  // QP solver
+
   /* ************************************ *
     *            MPC parameters            *
     * ************************************ */
@@ -132,13 +133,16 @@ private:
   /* ************************************ *
     *            QP parameters             *
     * ************************************ */
-  Eigen::SparseMatrix<double> hessianMatrix_;     // hessian matrix (in size `SS*(W+1) + IS*W` by `SS*(W+1) + IS*W`)
-  Eigen::SparseMatrix<double> constraintMatrix_;  // constraint matrix (in size `2*SS*(W+1) + 2*IS*W` by `SS*(W+1) + IS*W`)
-  Eigen::VectorXd gradient_;      // gradient vector (in size `SS*(W+1) + IS*W` by `1`)
-  Eigen::VectorXd lowerBound_;    // lower inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`) 
-  Eigen::VectorXd upperBound_;    // upper inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`)
-
-  OsqpEigen::Solver solver_;      // QP solver
+  // hessian matrix (in size `SS*(W+1) + IS*W` by `SS*(W+1) + IS*W`)
+  Eigen::SparseMatrix<double> hessian_matrix_;
+  // constraint matrix (in size `2*SS*(W+1) + 2*IS*W` by `SS*(W+1) + IS*W`)
+  Eigen::SparseMatrix<double> constraint_matrix_;
+  // gradient vector (in size `SS*(W+1) + IS*W` by `1`)
+  Eigen::VectorXd gradient_;
+  // lower inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`) 
+  Eigen::VectorXd lower_bound_;
+  // upper inequaltiy vector (in size `2*SS*(W+1) + 2*IS*W` by `1`)
+  Eigen::VectorXd upper_bound_;
 
 private:
 

@@ -40,102 +40,128 @@ namespace marslite {
 namespace constraint {
 
 // state upper constraint vector with no limits
-static const StateVector STATE_FREE_MAX = (
-    StateVector() << OsqpEigen::INFTY, 
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY
+static const StateVector STATE_FREE_MAX = ( StateVector()
+    << OsqpEigen::INFTY, 
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY
 ).finished();
 
 // state lower constraint vector with no limits
-static const StateVector STATE_FREE_MIN = (
-    StateVector() << -OsqpEigen::INFTY, 
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY
+static const StateVector STATE_FREE_MIN = ( StateVector()
+    << -OsqpEigen::INFTY, 
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY
 ).finished();
 
 // input upper constraint vector with no limits
-static const InputVector INPUT_FREE_MAX = (
-    InputVector() << OsqpEigen::INFTY, 
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY
+static const InputVector INPUT_FREE_MAX = ( InputVector()
+    << OsqpEigen::INFTY, 
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY
 ).finished();
 
 // input lower constraint vector with no limits
-static const InputVector INPUT_FREE_MIN = (
-    InputVector() << -OsqpEigen::INFTY, 
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY
+static const InputVector INPUT_FREE_MIN = ( InputVector()
+    << -OsqpEigen::INFTY, 
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY
 ).finished();
 
 // upper constraint vector of marslite's joint position
 // [130°, 125°, 153°, 190°, 178°, 180°, inf, 180°]
-static const StateVector POSITION_MAX = (StateVector()
-    << 2.26893, 2.18166, 2.67035, 3.31612,
-       3.10669, 3.14159, OsqpEigen::INFTY, 3.14159
+static const StateVector POSITION_MAX = ( StateVector()
+    << 2.26893,
+       2.18166,
+       2.67035,
+       3.31612,
+       3.10669,
+       3.14159,
+       OsqpEigen::INFTY,
+       3.14159
 ).finished();
 
 // lower constraint vector of marslite's joint position
 // TODO: Modify the second joint angle from -0.75049 (-43°) to -0.73304(-42°)
 // [-115°, -42°, -153°, -190°, -178°, -180°, -inf, -180°]
-static const StateVector POSITION_MIN = (StateVector()
-    << -2.00713, -0.73304, -2.67035, -3.31612,
-       -3.10669, -3.14159, -OsqpEigen::INFTY, -3.14159
+static const StateVector POSITION_MIN = ( StateVector()
+    << -2.00713,
+       -0.75049,
+       -2.67035,
+       -3.31612,
+       -3.10669,
+       -3.14159,
+       -OsqpEigen::INFTY,
+       -3.14159
 ).finished();
 
 // upper constraint vector of marslite's joint velocity
 // [180°/s, 180°/s, 180°/s, 183°/s, 183°/s, 183°/s, 0.7m/s, 180°/s]
-static const InputVector VELOCITY_MAX = (InputVector()
-    << 3.15, 3.15, 3.15, 3.2, 3.2, 3.2, 0.7, 3.15
+static const InputVector VELOCITY_MAX = ( InputVector()
+    << 3.15,
+       3.15,
+       3.15,
+       3.2,
+       3.2,
+       3.2,
+       0.7,
+       3.15
 ).finished();
 
 // lower constraint vector of marslite's joint velocity
 // [-180°/s, -180°/s, -180°/s, -183°/s, -183°/s, -183°/s, -0.7m/s, -180°/s]
-static const InputVector VELOCITY_MIN = (InputVector()
-    << -3.15, -3.15, -3.15, -3.2, -3.2, -3.2, -0.7, -3.15
+static const InputVector VELOCITY_MIN = ( InputVector()
+    << -3.15,
+       -3.15,
+       -3.15,
+       -3.2,
+       -3.2,
+       -3.2,
+       -0.7,
+       -3.15
 ).finished();
 
 // upper constraint vector of marslite's joint acceleration
-static const InputVector ACCELERATION_MAX = (
-    InputVector() << OsqpEigen::INFTY, 
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY,
-                     OsqpEigen::INFTY
+static const InputVector ACCELERATION_MAX = ( InputVector()
+    << OsqpEigen::INFTY, 
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY,
+       OsqpEigen::INFTY
 ).finished();
 
 // lower constraint vector of marslite's joint acceleration
-static const InputVector ACCELERATION_MIN = (
-    InputVector() << -OsqpEigen::INFTY, 
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY,
-                     -OsqpEigen::INFTY
+static const InputVector ACCELERATION_MIN = ( InputVector()
+    << -OsqpEigen::INFTY, 
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY,
+       -OsqpEigen::INFTY
 ).finished();
 
 } // namespace constraint

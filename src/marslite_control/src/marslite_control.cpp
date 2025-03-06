@@ -30,7 +30,7 @@ namespace marslite {
 namespace control {
 
 MarsliteControl::MarsliteControl(const ros::NodeHandle& nh)
-    : nh_(nh), loop_rate_(ros::Rate(25)), debug_msg_enabled_(true),
+    : nh_(nh), loop_rate_(ros::Rate(25)),
     timeout_(ros::Duration(30)), polling_sleep_duration_(ros::Duration(0.1)),
     is_hand_trigger_pressed_(false), is_index_trigger_pressed_(false)
 {
@@ -55,15 +55,34 @@ MarsliteControl::MarsliteControl(const ros::NodeHandle& nh)
     throw ConstructorInitializationFailedException();
   }
 
-  // Set the joint names for the trajectory
-  trajectory_goal_.trajectory.joint_names = {
-    "tm_shoulder_1_joint",
-    "tm_shoulder_2_joint",
-    "tm_elbow_joint",
-    "tm_wrist_1_joint",
-    "tm_wrist_2_joint",
-    "tm_wrist_3_joint"
-  };
+  // Set the joint names
+  if (use_sim_) {
+    trajectory_goal_.trajectory.joint_names = {
+      "tm_shoulder_1_joint",
+      "tm_shoulder_2_joint",
+      "tm_elbow_joint",
+      "tm_wrist_1_joint",
+      "tm_wrist_2_joint",
+      "tm_wrist_3_joint"
+    };
+  } else {
+    trajectory_goal_.trajectory.joint_names = {
+      "tm_shoulder_1_joint",
+      "tm_shoulder_2_joint",
+      "tm_elbow_1_joint",
+      "tm_wrist_1_joint",
+      "tm_wrist_2_joint",
+      "tm_wrist_3_joint"
+    };
+  }
+
+  // Set the position and velocity tolerances
+  trajectory_goal_.goal_tolerance.resize(6);
+  for (size_t i = 0; i < 6; i++) {
+    trajectory_goal_.goal_tolerance[i].name = trajectory_goal_.trajectory.joint_names[i];
+    trajectory_goal_.goal_tolerance[i].position = 0.01;   // 1 cm tolerance
+    trajectory_goal_.goal_tolerance[i].velocity = 0.05;   // 5 cm/s tolerance
+  }
 }
 
 /* ********************************************** *
@@ -152,43 +171,35 @@ bool MarsliteControl::moveGripper(const tf::Transform& previous_gripper_TF,
 }
 
 bool MarsliteControl::planTrajectoryWithQPSolver()
-{  
-  // Solve the trajectory planning problem
+{
   if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
     return false;
 
-  // Send the trajectory goal to the server, and wait for the result
   trajectory_action_client_->sendGoal(trajectory_goal_);
-  trajectory_action_client_->waitForResult(ros::Duration(loop_rate_));
+  trajectory_action_client_->waitForResult();
 
-  // Check if the action was successful
   ROS_INFO_STREAM_COND(debug_msg_enabled_, "  Planning result: " << trajectory_action_client_->getState().toString());
-  if (trajectory_action_client_->getState() == actionlib::SimpleClientGoalState::LOST) {
+  if (trajectory_action_client_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED) {
     return false;
   }
 
-  // Clear the trajectory goal before the next planning
   trajectory_goal_.trajectory.points.clear();
   return true;
 }
 
 bool MarsliteControl::planTrajectoryWithQPSolver(const ros::Duration& timeout)
 {
-  // Solve the trajectory planning problem
   if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
     return false;
 
-  // Send the trajectory goal to the server, and wait for the result
   trajectory_action_client_->sendGoal(trajectory_goal_);
   trajectory_action_client_->waitForResult(timeout);
 
-  // Check if the action was successful
   ROS_INFO_STREAM_COND(debug_msg_enabled_, "  Planning result: " << trajectory_action_client_->getState().toString());
-  if (trajectory_action_client_->getState() == actionlib::SimpleClientGoalState::LOST) {
+  if (trajectory_action_client_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED) {
     return false;
   }
 
-  // Clear the trajectory goal before the next planning
   trajectory_goal_.trajectory.points.clear();
   return true;
 }
@@ -224,6 +235,7 @@ TMKinematics::TransformationMatrix MarsliteControl::convertToTransformationMatri
 void MarsliteControl::parseParameters()
 {
   ros::NodeHandle pnh("~");
+  pnh.param("use_sim", use_sim_, false);
   pnh.param("debug_msg_enabled", debug_msg_enabled_, false);
   pnh.param("use_joystick", use_joystick_, true);
   pnh.param("position_scale", position_scale_, 1.0);
@@ -234,12 +246,11 @@ void MarsliteControl::parseParameters()
 
 void MarsliteControl::connectJointTrajectoryActionServer()
 {
-  // Initialize the `FollowJointTrajectoryAction` action client
-  trajectory_action_client_ = std::make_shared<JointTrajectoryAction>(
-    "/arm_controller/follow_joint_trajectory", true
-  );
+  const std::string action_server_name = use_sim_ ?
+      "/arm_controller/follow_joint_trajectory" :
+      "/tm_joint_trajectory_action";
+  trajectory_action_client_ = std::make_shared<JointTrajectoryAction>(action_server_name, true);
 
-  // Wait for the connection to the server
   ROS_INFO_STREAM("Connecting to FollowJointTrajectoryAction action server...");
   if (!trajectory_action_client_->waitForServer(timeout_))
     throw TimeOutException(timeout_);
@@ -255,14 +266,14 @@ tf::Transform MarsliteControl::lookUpTransformWithTimeout(
   tf::Transform TF;
 
   try {
-    // ROS_INFO_STREAM_COND(debug_msg_enabled_, "Obtain Transform from "
-    //     << target_frame << " to " << source_frame << " ...");
+    ROS_INFO_STREAM_COND(debug_msg_enabled_, "Obtain Transform from "
+        << target_frame << " to " << source_frame << " ...");
     listener.waitForTransform(target_frame, source_frame, ros::Time(0),
         timeout_, polling_sleep_duration_);
     listener.lookupTransform(target_frame, source_frame, ros::Time(0), stampedTF);
     TF.setOrigin(stampedTF.getOrigin());
     TF.setRotation(stampedTF.getRotation());
-    // ROS_INFO_STREAM_COND(debug_msg_enabled_, "Transform obtained!");
+    ROS_INFO_STREAM_COND(debug_msg_enabled_, "Transform obtained!");
   } catch (tf::TransformException &ex) {
     throw TransformNotFoundException(target_frame, source_frame);
   }
@@ -278,12 +289,12 @@ tf::StampedTransform MarsliteControl::lookUpStampedTransformWithTimeout(
   tf::StampedTransform stampedTF;
 
   try {
-    // ROS_INFO_STREAM_COND(debug_msg_enabled_, "Obtain StampedTransform from "
-    //     << target_frame << " to " << source_frame << " ...");
+    ROS_INFO_STREAM_COND(debug_msg_enabled_, "Obtain StampedTransform from "
+        << target_frame << " to " << source_frame << " ...");
     listener.waitForTransform(target_frame, source_frame, ros::Time(0),
         timeout_, polling_sleep_duration_);
     listener.lookupTransform(target_frame, source_frame, ros::Time(0), stampedTF);
-    // ROS_INFO_STREAM_COND(debug_msg_enabled_, "StampedTransform obtained!");
+    ROS_INFO_STREAM_COND(debug_msg_enabled_, "StampedTransform obtained!");
   } catch (tf::TransformException &ex) {
     throw TransformNotFoundException(target_frame, source_frame);
   }
@@ -333,7 +344,7 @@ MarsliteControl::StateVector MarsliteControl::findClosestValidJointAngles(
 }
 
 
-void MarsliteControl::jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg)
+void MarsliteControl::TMJointStateCallback(const sensor_msgs::JointState::ConstPtr& msg)
 {
   joint_states_ << this->getShoulder1JointAngle(msg),
                    this->getShoulder2JointAngle(msg),

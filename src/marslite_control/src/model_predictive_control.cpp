@@ -53,11 +53,11 @@ bool ModelPredictiveControl::initializeQPSolver()
   // Set the initial data of the QP solver
   solver_.data()->setNumberOfVariables(QP_STATE_SIZE);
   solver_.data()->setNumberOfConstraints(QP_BOUND_SIZE);
-  if(!solver_.data()->setHessianMatrix(hessianMatrix_))   return false;
+  if(!solver_.data()->setHessianMatrix(hessian_matrix_))   return false;
   if(!solver_.data()->setGradient(gradient_))             return false;
-  if(!solver_.data()->setLinearConstraintsMatrix(constraintMatrix_))  return false;
-  if(!solver_.data()->setLowerBound(lowerBound_))   return false;
-  if(!solver_.data()->setUpperBound(upperBound_))   return false;
+  if(!solver_.data()->setLinearConstraintsMatrix(constraint_matrix_))  return false;
+  if(!solver_.data()->setLowerBound(lower_bound_))   return false;
+  if(!solver_.data()->setUpperBound(upper_bound_))   return false;
 
   // Instantiate the solver
   if(!solver_.initSolver()) return false;
@@ -65,7 +65,7 @@ bool ModelPredictiveControl::initializeQPSolver()
   return true;
 }
 
-bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectoryWaypoints)
+bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectory_waypoints)
 {
   if (this->isOutOfBound(x0_)) {
     ROS_ERROR_STREAM("Initial pose is out of bound.");
@@ -98,38 +98,51 @@ bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajector
   StateVector x = x0_;        // current state
   size_t counter = 0;         // counter for the trajectory waypoints
 
+  trajectory_msgs::JointTrajectoryPoint trajectory_waypoint;
+  trajectory_waypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
+  trajectory_waypoint.velocities = std::vector<double>(6, 0.0);
+  trajectory_waypoint.time_from_start = ros::Duration(0.0);
+  trajectory_waypoints.push_back(trajectory_waypoint);
+
   while ((x - xRef_).norm() >= MPC_ZERO) {
-    // Solve the QP problem
     if (solver_.solveProblem() != OsqpEigen::ErrorExitFlag::NoError) {
       ROS_ERROR_STREAM("\tUnable to solve the problem.");
       return false;
     }
 
-    // Check if the solution is unfeasible
     if (solver_.getStatus() != OsqpEigen::Status::Solved) {
       ROS_ERROR_STREAM("\tThe solution is unfeasible.");
       return false;
     }
 
-    // Obtain the solution, and append the new waypoint to the trajectory  (`trajectoryGoal_`)
     QPSolution = solver_.getSolution();
     u = QPSolution.block(QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1);
 
-    trajectory_msgs::JointTrajectoryPoint trajectoryWaypoint;
-    trajectoryWaypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
-    trajectoryWaypoint.velocities = {u[0], u[1], u[2], u[3], u[4], u[5]};
-    trajectoryWaypoint.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
-    trajectoryWaypoints.push_back(trajectoryWaypoint);
-    ROS_INFO_STREAM_COND(counter % 100 == 0, x.transpose()*180/M_PI);
+    trajectory_waypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
+    trajectory_waypoint.velocities = {u[0], u[1], u[2], u[3], u[4], u[5]};
+    trajectory_waypoint.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
+    trajectory_waypoints.push_back(trajectory_waypoint);
     
-    // Propagate the model
     x = A_ * x + B_ * u;
-
-    // Update the constraint vectors
     if (!this->updateConstraintVectors(x)) {
       ROS_ERROR_STREAM("\tError updating the constraint vectors.");
       return false;
     }
+  }
+
+  // Downsample the trajectory if it exceeds 60 waypoints
+  if (trajectory_waypoints.size() > 60) {
+    std::vector<trajectory_msgs::JointTrajectoryPoint> downsampled_waypoints;
+    double step = trajectory_waypoints.size() / 59.;
+    for (double i = 0; i < trajectory_waypoints.size(); i += step) {
+      downsampled_waypoints.push_back(trajectory_waypoints[(int)i]);
+      // std::cout << i << ' ';
+    }
+    // Ensure the last waypoint is included
+    if (downsampled_waypoints.size() < 60) {
+      downsampled_waypoints.push_back(trajectory_waypoints.back());
+    }
+    trajectory_waypoints = downsampled_waypoints;
   }
 
   return true;
@@ -178,19 +191,19 @@ void ModelPredictiveControl::setWeightMatrices()
 
 void ModelPredictiveControl::castMPCToQPHessian()
 {
-  hessianMatrix_.resize(QP_STATE_SIZE, QP_STATE_SIZE);
+  hessian_matrix_.resize(QP_STATE_SIZE, QP_STATE_SIZE);
 
   double value;
   for (int i = 0; i < QP_DYNAMIC_SIZE; ++i) {
     value = Q_.diagonal()[i % MPC_STATE_SIZE];
     if (value != 0)
-      hessianMatrix_.insert(i,i) = value;
+      hessian_matrix_.insert(i,i) = value;
   }
 
   for (int i = QP_DYNAMIC_SIZE; i < QP_STATE_SIZE; ++i) {
     value = R_.diagonal()[i % MPC_INPUT_SIZE];
     if (value != 0)
-      hessianMatrix_.insert(i,i) = value;
+      hessian_matrix_.insert(i,i) = value;
   }
 }
 
@@ -206,10 +219,10 @@ void ModelPredictiveControl::castMPCToQPGradient()
 
 void ModelPredictiveControl::castMPCToQPConstraintMatrix()
 {
-  constraintMatrix_.resize(QP_BOUND_SIZE, QP_STATE_SIZE);
+  constraint_matrix_.resize(QP_BOUND_SIZE, QP_STATE_SIZE);
 
   for (int i = 0; i < QP_DYNAMIC_SIZE; ++i){
-    constraintMatrix_.insert(i,i) = -1;
+    constraint_matrix_.insert(i,i) = -1;
   }
 
   double value;
@@ -218,7 +231,7 @@ void ModelPredictiveControl::castMPCToQPConstraintMatrix()
       for (int k = 0; k < MPC_STATE_SIZE; ++k) {
         value = A_(j,k);
         if (value != 0)
-          constraintMatrix_.insert(MPC_STATE_SIZE * (i+1) + j, MPC_STATE_SIZE * i + k) = value;
+          constraint_matrix_.insert(MPC_STATE_SIZE * (i+1) + j, MPC_STATE_SIZE * i + k) = value;
       }
     }
   }
@@ -228,54 +241,56 @@ void ModelPredictiveControl::castMPCToQPConstraintMatrix()
       for (int k = 0; k < MPC_INPUT_SIZE; ++k) {
         value = B_(j,k);
         if (value != 0)
-          constraintMatrix_.insert(MPC_STATE_SIZE * (i+1) + j, MPC_INPUT_SIZE * i + k + QP_DYNAMIC_SIZE) = value;
+          constraint_matrix_.insert(MPC_STATE_SIZE * (i+1) + j, MPC_INPUT_SIZE * i + k + QP_DYNAMIC_SIZE) = value;
       }
     }
   }
 
   for (int i = 0; i < QP_STATE_SIZE; ++i) {
-    constraintMatrix_.insert(i + QP_DYNAMIC_SIZE, i) = 1;
+    constraint_matrix_.insert(i + QP_DYNAMIC_SIZE, i) = 1;
   }
 
   for (int i = 0; i < MPC_INPUT_SIZE * MPC_WINDOW_SIZE; ++i) {
-    constraintMatrix_.insert(i + 2 * QP_DYNAMIC_SIZE + QP_CONTROL_SIZE, i + QP_DYNAMIC_SIZE) = MPC_SAMPLE_FREQ;
+    constraint_matrix_.insert(i + 2 * QP_DYNAMIC_SIZE + QP_CONTROL_SIZE, i + QP_DYNAMIC_SIZE) = MPC_SAMPLE_FREQ;
   }
 
   for (int i = 0; i < MPC_INPUT_SIZE * (MPC_WINDOW_SIZE-1); ++i) {
-    constraintMatrix_.insert(i + 2 * QP_DYNAMIC_SIZE + QP_CONTROL_SIZE + MPC_INPUT_SIZE, i + QP_DYNAMIC_SIZE) = -MPC_SAMPLE_FREQ;
+    constraint_matrix_.insert(i + 2 * QP_DYNAMIC_SIZE + QP_CONTROL_SIZE + MPC_INPUT_SIZE, i + QP_DYNAMIC_SIZE) = -MPC_SAMPLE_FREQ;
   }
 }
 
 void ModelPredictiveControl::castMPCToQPConstraintVectors()
 {
-  // Evaluate the lower and the upper inequality vectors
-  Eigen::VectorXd lowerInequality = Eigen::MatrixXd::Zero(QP_INEQUALITY_SIZE, 1); // lower inequality vector (in size `SS*(W+1) + 2*IS*W` by `1`)
-  Eigen::VectorXd upperInequality = Eigen::MatrixXd::Zero(QP_INEQUALITY_SIZE, 1); // upper inequality vector (in size `SS*(W+1) + 2*IS*W` by `1`)
+  // lower inequality vector (in size `SS*(W+1) + 2*IS*W` by `1`)
+  Eigen::VectorXd lower_inequality = Eigen::MatrixXd::Zero(QP_INEQUALITY_SIZE, 1);
+  // upper inequality vector (in size `SS*(W+1) + 2*IS*W` by `1`)
+  Eigen::VectorXd upper_inequality = Eigen::MatrixXd::Zero(QP_INEQUALITY_SIZE, 1);
   for (int i = 0; i < MPC_WINDOW_SIZE+1; ++i) {
-    lowerInequality.block(MPC_STATE_SIZE * i, 0, MPC_STATE_SIZE, 1) = xMin_;
-    upperInequality.block(MPC_STATE_SIZE * i, 0, MPC_STATE_SIZE, 1) = xMax_;
+    lower_inequality.block(MPC_STATE_SIZE * i, 0, MPC_STATE_SIZE, 1) = xMin_;
+    upper_inequality.block(MPC_STATE_SIZE * i, 0, MPC_STATE_SIZE, 1) = xMax_;
   }
   for (int i = 0; i < MPC_WINDOW_SIZE; ++i) {
-    lowerInequality.block(MPC_INPUT_SIZE * i + QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1) = uMin_;
-    upperInequality.block(MPC_INPUT_SIZE * i + QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1) = uMax_;
+    lower_inequality.block(MPC_INPUT_SIZE * i + QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1) = uMin_;
+    upper_inequality.block(MPC_INPUT_SIZE * i + QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1) = uMax_;
   }
   for (int i = 0; i < MPC_WINDOW_SIZE; ++i) {
-    lowerInequality.block(MPC_INPUT_SIZE * i + QP_STATE_SIZE, 0, MPC_INPUT_SIZE, 1) = aMin_;
-    upperInequality.block(MPC_INPUT_SIZE * i + QP_STATE_SIZE, 0, MPC_INPUT_SIZE, 1) = aMax_;
+    lower_inequality.block(MPC_INPUT_SIZE * i + QP_STATE_SIZE, 0, MPC_INPUT_SIZE, 1) = aMin_;
+    upper_inequality.block(MPC_INPUT_SIZE * i + QP_STATE_SIZE, 0, MPC_INPUT_SIZE, 1) = aMax_;
   }
 
-  // Evaluate the lower and the upper equality vectors
-  Eigen::VectorXd lowerEquality = Eigen::MatrixXd::Zero(QP_EQUALITY_SIZE, 1); // lower equality vector (in size `SS*(W+1)` by `1`)
-  Eigen::VectorXd upperEquality = Eigen::MatrixXd::Zero(QP_EQUALITY_SIZE, 1); // upper equality vector (in size `SS*(W+1)` by `1`)
-  lowerEquality.block(0, 0, MPC_STATE_SIZE, 1) = -x0_;
-  upperEquality = lowerEquality;
+  // lower equality vector (in size `SS*(W+1)` by `1`)
+  Eigen::VectorXd lower_equality = Eigen::MatrixXd::Zero(QP_EQUALITY_SIZE, 1);
+  // upper equality vector (in size `SS*(W+1)` by `1`)
+  Eigen::VectorXd upper_equality = Eigen::MatrixXd::Zero(QP_EQUALITY_SIZE, 1);
+  lower_equality.block(0, 0, MPC_STATE_SIZE, 1) = -x0_;
+  upper_equality = lower_equality;
   
   // Merge inequality and equality vectors into constraint vectors
-  lowerBound_ = Eigen::MatrixXd::Zero(QP_BOUND_SIZE, 1);
-  lowerBound_ << lowerEquality, lowerInequality;
+  lower_bound_ = Eigen::MatrixXd::Zero(QP_BOUND_SIZE, 1);
+  lower_bound_ << lower_equality, lower_inequality;
 
-  upperBound_ = Eigen::MatrixXd::Zero(QP_BOUND_SIZE, 1);
-  upperBound_ << upperEquality, upperInequality;
+  upper_bound_ = Eigen::MatrixXd::Zero(QP_BOUND_SIZE, 1);
+  upper_bound_ << upper_equality, upper_inequality;
 }
 
 bool ModelPredictiveControl::updateGradient(const StateVector& xRef)
@@ -289,24 +304,24 @@ bool ModelPredictiveControl::updateGradient(const StateVector& xRef)
 
 bool ModelPredictiveControl::updateConstraintVectors(const StateVector& x)
 {
-  lowerBound_.block(0, 0, MPC_STATE_SIZE, 1) = -x;
-  upperBound_.block(0, 0, MPC_STATE_SIZE, 1) = -x;
+  lower_bound_.block(0, 0, MPC_STATE_SIZE, 1) = -x;
+  upper_bound_.block(0, 0, MPC_STATE_SIZE, 1) = -x;
 
-  return solver_.updateBounds(lowerBound_, upperBound_);
+  return solver_.updateBounds(lower_bound_, upper_bound_);
 }
 
 /* ********************************************** *
  *                 Debug functions                *
  * ********************************************** */
 
-void ModelPredictiveControl::printStateVector(const StateVector& stateVector, const std::string& name)
+void ModelPredictiveControl::printStateVector(const StateVector& state_vector, const std::string& name)
 {
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
   ss << "\t" << name << ": ";
-  for (int i = 0; i < stateVector.size(); ++i) {
-    ss << std::round(stateVector[i] * 100) / 100;
-    if (i != stateVector.size() - 1) {
+  for (int i = 0; i < state_vector.size(); ++i) {
+    ss << std::round(state_vector[i] * 100) / 100;
+    if (i != state_vector.size() - 1) {
       ss << ", ";
     }
   }

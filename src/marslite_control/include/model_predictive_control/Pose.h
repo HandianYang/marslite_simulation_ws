@@ -45,63 +45,63 @@ namespace marslite {
  */
 namespace pose {
 
-static const StateVector INITIAL = (
-    StateVector() << 0., 0., 0., 0., 0., 0., 0., 0.
+static const StateVector INITIAL = ( StateVector()
+  << 0., 0., 0., 0., 0., 0., 0., 0.
 ).finished();
 
-static const StateVector HOME = (
-    StateVector() << deg2Rad(0),
-                     deg2Rad(-42),
-                     deg2Rad(113),
-                     deg2Rad(-71),
-                     deg2Rad(90),
-                     deg2Rad(0),
-                     0,
-                     deg2Rad(0)
+static const StateVector HOME = ( StateVector()
+  << deg2Rad(0),
+     deg2Rad(-42),
+     deg2Rad(113),
+     deg2Rad(-71),
+     deg2Rad(90),
+     deg2Rad(0),
+     0,
+     deg2Rad(0)
 ).finished();
 
-static const StateVector DEFAULT1 = (
-    StateVector() << deg2Rad(0),
-                     deg2Rad(0),
-                     deg2Rad(90),
-                     deg2Rad(0),
-                     deg2Rad(90),
-                     deg2Rad(0),
-                     0,
-                     deg2Rad(0)
+static const StateVector DEFAULT1 = ( StateVector()
+  << deg2Rad(0),
+     deg2Rad(0),
+     deg2Rad(90),
+     deg2Rad(0),
+     deg2Rad(90),
+     deg2Rad(0),
+     0,
+     deg2Rad(0)
 ).finished();
 
-static const StateVector DEFAULT2 = (
-    StateVector() << deg2Rad(0),
-                     deg2Rad(0),
-                     deg2Rad(90),
-                     deg2Rad(-90),
-                     deg2Rad(90),
-                     deg2Rad(0),
-                     0,
-                     deg2Rad(0)
+static const StateVector DEFAULT2 = ( StateVector()
+  << deg2Rad(0),
+     deg2Rad(0),
+     deg2Rad(90),
+     deg2Rad(-90),
+     deg2Rad(90),
+     deg2Rad(0),
+     0,
+     deg2Rad(0)
 ).finished();
 
-static const StateVector DEFAULT3 = (
-    StateVector() << deg2Rad(0),
-                     deg2Rad(0),
-                     deg2Rad(90),
-                     deg2Rad(90),
-                     deg2Rad(-90),
-                     deg2Rad(0),
-                     0,
-                     deg2Rad(0)
+static const StateVector DEFAULT3 = ( StateVector()
+  << deg2Rad(0),
+     deg2Rad(0),
+     deg2Rad(90),
+     deg2Rad(90),
+     deg2Rad(-90),
+     deg2Rad(0),
+     0,
+     deg2Rad(0)
 ).finished();
 
-static const StateVector DEFAULT4 = (
-    StateVector() << deg2Rad(0),
-                     deg2Rad(0),
-                     deg2Rad(90),
-                     deg2Rad(0),
-                     deg2Rad(-90),
-                     deg2Rad(0),
-                     0,
-                     deg2Rad(0)
+static const StateVector DEFAULT4 = ( StateVector()
+  << deg2Rad(0),
+     deg2Rad(0),
+     deg2Rad(90),
+     deg2Rad(0),
+     deg2Rad(-90),
+     deg2Rad(0),
+     0,
+     deg2Rad(0)
 ).finished();
 
 } // namespace pose

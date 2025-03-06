@@ -153,7 +153,8 @@ public:
   }
 
   /**
-   * @brief Plan the trajectory of the robot using QP solver.
+   * @brief Plan the trajectory of the robot using QP solver. The planner keeps waiting
+   *        for the result until it is executed successfully.
    * @return True if the trajectory can be executed, and it is executed successfully.
   */
   bool planTrajectoryWithQPSolver();
@@ -161,6 +162,7 @@ public:
   /**
    * @brief Plan the trajectory of the robot using QP solver with the given timeout.
    *        The planner waits for the result within the specified timeout duration.
+   * @param timeout The timeout duration.
    * @return True if the trajectory can be executed, and it is executed successfully.
   */
   bool planTrajectoryWithQPSolver(const ros::Duration& timeout);
@@ -168,13 +170,13 @@ public:
   /**
    * @brief Get the angle value of the first joint (i.e. `tm_shoulder_1_joint`)
    *        of the TM5 robotic arm.
-   * @param joint_state message in JointStateConstPtr type.
+   * @param tm_joint_state joint states of the TM5 robotic arm.
    * @return The angle value in radians.
    */
-  inline double getShoulder1JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
+  inline double getShoulder1JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
   {
     try {
-      return joint_state->position.at(4);
+      return tm_joint_state->position.at(0);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -184,13 +186,13 @@ public:
   /**
    * @brief Get the angle value of the second joint (i.e. `tm_shoulder_2_joint`)
    *        of the TM5 robotic arm.
-   * @param joint_state message in JointStateConstPtr type.
+   * @param tm_joint_state joint states of the TM5 robotic arm.
    * @return The angle value in radians.
    */
-  inline double getShoulder2JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
+  inline double getShoulder2JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
   {
     try {
-      return joint_state->position.at(5);
+      return tm_joint_state->position.at(1);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -200,13 +202,13 @@ public:
   /**
    * @brief Get the angle value of the third joint (i.e. `tm_elbow_joint`)
    *        of the TM5 robotic arm.
-   * @param joint_state message in JointStateConstPtr type.
+   * @param tm_joint_state joint states of the TM5 robotic arm.
    * @return The angle value in radians.
    */
-  inline double getElbowJointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
+  inline double getElbowJointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
   {
     try {
-      return joint_state->position.at(3);
+      return tm_joint_state->position.at(2);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -216,13 +218,14 @@ public:
   /**
    * @brief Get the angle value of the fourth joint (i.e. `tm_wrist_1_joint`)
    *        of the TM5 robotic arm.
-   * @param joint_state message in JointStateConstPtr type.
+   * @param tm_joint_state joint states of the TM5 robotic arm.
    * @return The angle value in radians.
    */
-  inline double getWrist1JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
+  inline double getWrist1JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
   {
     try {
-      return joint_state->position.at(6);
+      // return joint_state->position.at(6);   // TODO: Modify the index
+      return tm_joint_state->position.at(3);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -232,13 +235,13 @@ public:
   /**
    * @brief Get the angle value of the fifth joint (i.e. `tm_wrist_2_joint`)
    *        of the TM5 robotic arm.
-   * @param joint_state message in JointStateConstPtr type.
+   * @param tm_joint_state joint states of the TM5 robotic arm.
    * @return The angle value in radians.
    */
-  inline double getWrist2JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
+  inline double getWrist2JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
   {
     try {
-      return joint_state->position.at(7);
+      return tm_joint_state->position.at(4);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -248,13 +251,13 @@ public:
   /**
    * @brief Get the angle value of the sixth joint (i.e. `tm_wrist_3_joint`)
    *        of the TM5 robotic arm.
-   * @param joint_state message in JointStateConstPtr type.
+   * @param tm_joint_state joint states of the TM5 robotic arm.
    * @return The angle value in radians.
    */
-  inline double getWrist3JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
+  inline double getWrist3JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
   {
     try {
-      return joint_state->position.at(8);
+      return tm_joint_state->position.at(5);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -398,7 +401,7 @@ private:
   TMKinematics::TMKinematicsPtr kinematics_ptr_;
 
   ros::NodeHandle nh_;
-  ros::Subscriber joint_state_subscriber_;
+  ros::Subscriber tm_joint_state_subscriber_;
   ros::Subscriber left_joy_subscriber_;
   ros::Subscriber left_joy_pose_subscriber_;
   StateVector joint_states_;
@@ -410,7 +413,8 @@ private:
 
   std::shared_ptr<JointTrajectoryAction> trajectory_action_client_; 
   control_msgs::FollowJointTrajectoryGoal trajectory_goal_;
-    
+  
+  bool use_sim_;
   bool debug_msg_enabled_;
   bool is_hand_trigger_pressed_;
   bool is_index_trigger_pressed_;
@@ -442,8 +446,8 @@ private:
   inline void subscribeToJointState() {
     try {
       subscribeTopicWithTimeout<MarsliteControl, sensor_msgs::JointState>(
-        this, nh_, joint_state_subscriber_, "/joint_states",
-        1, &MarsliteControl::jointStateCallback,
+        this, nh_, tm_joint_state_subscriber_, "/tm_joint_states",
+        1, &MarsliteControl::TMJointStateCallback,
         debug_msg_enabled_, timeout_, polling_sleep_duration_
       );
     } catch (const TimeOutException& e) {
@@ -614,7 +618,7 @@ private:
   /**
    * @brief Callback function for receiving robot state messages.
    */
-  void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
+  void TMJointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
   /**
    * @brief Callback function for receiving joy messages.

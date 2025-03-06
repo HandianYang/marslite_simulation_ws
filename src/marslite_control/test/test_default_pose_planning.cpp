@@ -33,38 +33,42 @@ int main(int argc, char** argv)
   ros::AsyncSpinner spinner(0);
   spinner.start();
 
+  MarsliteControl::ControlPtr control_ptr = std::make_shared<MarsliteControl>();
   try {
-    MarsliteControl::ControlPtr control_ptr = std::make_shared<MarsliteControl>();
-
     // Test 1: planning to the home pose of marslite robots
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::HOME);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver(ros::Duration(10)));
+    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
+    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::HOME));
+    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_INFO("Test 1 passed!");
     
     // Test 2: planning to the default1 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT1);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver(ros::Duration(10)));
+    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
+    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT1));
+    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_INFO("Test 2 passed!");
 
     // Test 3: planning to the default2 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT2);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver(ros::Duration(10)));
+    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
+    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT2));
+    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_INFO("Test 3 passed!");
 
     // Test 4: planning to the default3 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT3);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver(ros::Duration(10)));
+    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
+    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT3));
+    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_INFO("Test 4 passed!");
 
     // Test 5: planning to the default4 pose
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::DEFAULT4);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver(ros::Duration(10)));
+    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
+    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT4));
+    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_INFO("Test 5 passed!");
 
     // Test 6: planning to the home pose of marslite robots
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::HOME);
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver(ros::Duration(10)));
+    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
+    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::HOME));
+    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
 
   } catch (const ConstructorInitializationFailedException& ex) {
     ROS_ERROR_STREAM(ex.what());
@@ -73,6 +77,6 @@ int main(int argc, char** argv)
   }
 
   ROS_INFO("All tests passed! Type Ctrl+C to exit Gazebo...");
-  ros::shutdown();
+  ros::waitForShutdown();
   return 0;
 }

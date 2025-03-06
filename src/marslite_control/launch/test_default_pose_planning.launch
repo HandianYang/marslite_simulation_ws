@@ -2,15 +2,18 @@
 <launch>
   <env name="ROSCONSOLE_FORMAT" value="[${severity}] [${node}] ${message}"/>
 
-  <arg name="gazebo_launch_file" default="gazebo_supermarket.launch"/>
-  <arg name="realsense_enabled" default="false"/>
-  <include file="$(find mars_lite_description)/launch/$(arg gazebo_launch_file)">
-    <arg name="realsense_enabled" value="$(arg realsense_enabled)"/>
-  </include>
-
-  <arg name="message_enabled" default="true"/>
+  <arg name="use_sim" default="true"/>
+  <group if = "$(arg use_sim)">
+    <arg name="gazebo_launch_file" default="gazebo_supermarket.launch"/>
+    <arg name="realsense_enabled" default="false"/>
+    <include file="$(find mars_lite_description)/launch/$(arg gazebo_launch_file)">
+      <arg name="realsense_enabled" value="$(arg realsense_enabled)"/>
+    </include>
+  </group>
+  
+  <arg name="debug_msg_enabled" default="false"/>
   <node name="test_default_pose_planning" pkg="marslite_control" type="test_default_pose_planning" output="screen">
-    <param name="message_enabled" value="$(arg message_enabled)"/>
+    <param name="debug_msg_enabled" value="$(arg debug_msg_enabled)"/>
     <param name="use_joystick" value="false"/>
   </node>
 </launch>

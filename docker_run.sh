@@ -12,21 +12,19 @@ COLOR_YELLOW='\033[0;33m'
 COLOR_NC='\033[0m'
 
 # Check the command 'nvidia-docker' existed or not
-#ret_code="$(command -v nvidia-docker)"
-#if [ -z "$ret_code" ]; then
-#    if [ -z "$(command -v nvidia-container-cli)" ]; then
-#        NVIDIA_SUPPORT_OPTION="--gpus all "
-#    else
-#        NVIDIA_SUPPORT_OPTION=""
-#    fi
-#    DOCKER_CMD="docker"
-#else
-#    DOCKER_CMD="nvidia-docker"
-#    NVIDIA_SUPPORT_OPTION=""
-#fi
-DOCKER_CMD="docker"
-NVIDIA_SUPPORT_OPTION="--gpus all"
-#echo "$DOCKER_CMD $NVIDIA_SUPPORT_OPTION"
+ret_code="$(command -v nvidia-docker)"
+if [ -z "$ret_code" ]; then
+    if [ -z "$(command -v nvidia-container-cli)" ]; then
+        NVIDIA_SUPPORT_OPTION="--gpus all "
+    else
+        NVIDIA_SUPPORT_OPTION=""
+    fi
+    DOCKER_CMD="docker"
+else
+    DOCKER_CMD="nvidia-docker"
+    NVIDIA_SUPPORT_OPTION=""
+fi
+
 
 # Find current directory and transfer it to container directory for Docker
 current_dir="$(pwd)"
@@ -53,6 +51,7 @@ else
         --net=host \
         --env DISPLAY=$DISPLAY \
         --env QT_X11_NO_MITSHM=1 \
+        --env NVIDIA_DISABLE_REQUIRE=1 \
         -v /dev:/dev \
         -v /etc/localtime:/etc/localtime:ro \
         -v /var/run/docker.sock:/var/run/docker.sock \
