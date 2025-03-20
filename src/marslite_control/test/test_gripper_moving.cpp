@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "test_gripper_moving");
 
-  ros::AsyncSpinner spinner(0);
+  ros::AsyncSpinner spinner(2);
   spinner.start();
 
   try {
@@ -42,24 +42,25 @@ int main(int argc, char** argv)
     ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::HOME));
     ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
     ROS_INFO("Preparation done.");
+    ros::Duration(0.01).sleep();
     
     // Test 1: Move the gripper forward and backward by 0.1 meters
-    ROS_ASSERT(control_ptr->moveGripperForward(0.2));
-    ROS_ASSERT(control_ptr->moveGripperBackward(0.1));
+    ROS_ASSERT(control_ptr->moveGripperForward(0.2));   ros::Duration(0.01).sleep();
+    ROS_ASSERT(control_ptr->moveGripperBackward(0.1));  ros::Duration(0.01).sleep();
     ROS_INFO("Test 1 passed.");
 
     // Test 2: Move the gripper left and right by 0.1 meters
-    ROS_ASSERT(control_ptr->moveGripperLeft(0.1));
-    ROS_ASSERT(control_ptr->moveGripperRight(0.1));
-    ROS_ASSERT(control_ptr->moveGripperRight(0.1));
-    ROS_ASSERT(control_ptr->moveGripperLeft(0.1));
+    ROS_ASSERT(control_ptr->moveGripperLeft(0.1));    ros::Duration(0.01).sleep();
+    ROS_ASSERT(control_ptr->moveGripperRight(0.1));   ros::Duration(0.01).sleep();
+    ROS_ASSERT(control_ptr->moveGripperRight(0.1));   ros::Duration(0.01).sleep();
+    ROS_ASSERT(control_ptr->moveGripperLeft(0.1));    ros::Duration(0.01).sleep();
     ROS_INFO("Test 2 passed.");
 
     // Test 3: Move the gripper up and down by 0.1 meters
-    ROS_ASSERT(control_ptr->moveGripperUp(0.1));
-    ROS_ASSERT(control_ptr->moveGripperDown(0.1));
-    ROS_ASSERT(control_ptr->moveGripperDown(0.1));
-    ROS_ASSERT(control_ptr->moveGripperUp(0.1));
+    ROS_ASSERT(control_ptr->moveGripperUp(0.1));      ros::Duration(0.01).sleep();
+    ROS_ASSERT(control_ptr->moveGripperDown(0.1));    ros::Duration(0.01).sleep();
+    ROS_ASSERT(control_ptr->moveGripperDown(0.1));    ros::Duration(0.01).sleep();
+    ROS_ASSERT(control_ptr->moveGripperUp(0.1));      ros::Duration(0.01).sleep();
     ROS_INFO("Test 3 passed.");
 
   } catch (const ConstructorInitializationFailedException& ex) {
@@ -73,7 +74,7 @@ int main(int argc, char** argv)
     ROS_ERROR_STREAM(ex.what());
   }
 
-  ROS_INFO("All tests passed! Type Ctrl+C to exit Gazebo...");
-  ros::shutdown();
+  ROS_INFO("All tests passed! Type Ctrl+C to exit...");
+  ros::waitForShutdown();
   return 0;
 }

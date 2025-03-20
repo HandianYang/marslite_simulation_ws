@@ -109,10 +109,17 @@ public:
 
   /**
    * @brief Plan the trajectory of the robot using QP solver.
-   * @return True if the trajectory can be executed, and it is executed successfully.
+   * @return True if the trajectory can be planned successfully.
    * @note Call `initializeQPSolver()` first before calling this function.
   */
   bool solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectory_waypoints);
+
+  /**
+   * @brief Plan the trajectory of the robot using only the initial point and the target point.
+   * @return True if the trajectory can be planned successfully.
+   * @note The function does not use QP solver.
+   */
+  bool solveWithoutQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectory_waypoints);
 
 private:
   OsqpEigen::Solver solver_;  // QP solver

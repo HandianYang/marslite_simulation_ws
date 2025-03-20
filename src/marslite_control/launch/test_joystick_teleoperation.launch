@@ -4,14 +4,17 @@
 
   <include file="$(find file_server)/launch/ros_sharp_communication.launch">
   </include>
+  
+  <arg name="use_sim" default="true"/>
+  <group if = "$(arg use_sim)">
+    <arg name="gazebo_launch_file" default="gazebo_supermarket.launch"/>
+    <arg name="realsense_enabled" default="false"/>
+    <include file="$(find mars_lite_description)/launch/$(arg gazebo_launch_file)">
+      <arg name="realsense_enabled" value="$(arg realsense_enabled)"/>
+    </include>
+  </group>
 
-  <arg name="gazebo_launch_file" default="gazebo_supermarket.launch"/>
-  <arg name="realsense_enabled" default="false"/>
-  <include file="$(find mars_lite_description)/launch/$(arg gazebo_launch_file)">
-    <arg name="realsense_enabled" value="$(arg realsense_enabled)"/>
-  </include>
-
-  <arg name="debug_msg_enabled" default="true"/>
+  <arg name="debug_msg_enabled" default="false"/>
   <arg name="position_scale" default="0.8"/>
   <arg name="orientation_scale" default="0.5"/>
   <arg name="position_difference_threshold" default="0.01"/>

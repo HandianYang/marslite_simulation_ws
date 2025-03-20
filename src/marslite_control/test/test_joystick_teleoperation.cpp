@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "test_joystick_teleoperation");
 
-  ros::AsyncSpinner spinner(0);
+  ros::AsyncSpinner spinner(2);
   spinner.start();
 
   try {
@@ -41,7 +41,5 @@ int main(int argc, char** argv)
     ROS_ERROR_STREAM(ex.what());
   }
   
-  ROS_INFO("All tests passed! Type Ctrl+C to exit Gazebo...");
-  ros::waitForShutdown();
   return 0;
 }

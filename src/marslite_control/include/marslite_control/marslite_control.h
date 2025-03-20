@@ -62,7 +62,8 @@ namespace marslite {
 namespace control {
 
 static constexpr double kTriggerThreshold = 0.95;
-static tf::Transform robotiq_to_flange_TF(tf::Quaternion(0.5, 0.5, 0.5, 0.5), tf::Vector3(0, 0, 0));
+static tf::Transform base_to_tool_rotation_TF(tf::Quaternion(0.5, 0.5, 0.5, 0.5), tf::Vector3(0, 0, 0));
+static tf::Transform tool_to_base_rotation_TF = base_to_tool_rotation_TF.inverse();
 
 /**
  * @brief The class for marslite control
@@ -170,13 +171,13 @@ public:
   /**
    * @brief Get the angle value of the first joint (i.e. `tm_shoulder_1_joint`)
    *        of the TM5 robotic arm.
-   * @param tm_joint_state joint states of the TM5 robotic arm.
+   * @param joint_state joint states of the marslite robot.
    * @return The angle value in radians.
    */
-  inline double getShoulder1JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
+  inline double getShoulder1JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
   {
     try {
-      return tm_joint_state->position.at(0);
+      return use_sim_ ? joint_state->position.at(4) : joint_state->position.at(2);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -186,13 +187,13 @@ public:
   /**
    * @brief Get the angle value of the second joint (i.e. `tm_shoulder_2_joint`)
    *        of the TM5 robotic arm.
-   * @param tm_joint_state joint states of the TM5 robotic arm.
+   * @param joint_state joint states of marslite robot.
    * @return The angle value in radians.
    */
-  inline double getShoulder2JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
+  inline double getShoulder2JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
   {
     try {
-      return tm_joint_state->position.at(1);
+      return use_sim_ ? joint_state->position.at(5) : joint_state->position.at(3);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -202,13 +203,13 @@ public:
   /**
    * @brief Get the angle value of the third joint (i.e. `tm_elbow_joint`)
    *        of the TM5 robotic arm.
-   * @param tm_joint_state joint states of the TM5 robotic arm.
+   * @param joint_state joint states of marslite robot.
    * @return The angle value in radians.
    */
-  inline double getElbowJointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
+  inline double getElbowJointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
   {
     try {
-      return tm_joint_state->position.at(2);
+      return use_sim_ ? joint_state->position.at(3) : joint_state->position.at(4);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -218,14 +219,13 @@ public:
   /**
    * @brief Get the angle value of the fourth joint (i.e. `tm_wrist_1_joint`)
    *        of the TM5 robotic arm.
-   * @param tm_joint_state joint states of the TM5 robotic arm.
+   * @param joint_state joint states of marslite robot.
    * @return The angle value in radians.
    */
-  inline double getWrist1JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
+  inline double getWrist1JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
   {
     try {
-      // return joint_state->position.at(6);   // TODO: Modify the index
-      return tm_joint_state->position.at(3);
+      return use_sim_ ? joint_state->position.at(6) : joint_state->position.at(5);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -235,13 +235,13 @@ public:
   /**
    * @brief Get the angle value of the fifth joint (i.e. `tm_wrist_2_joint`)
    *        of the TM5 robotic arm.
-   * @param tm_joint_state joint states of the TM5 robotic arm.
+   * @param joint_state joint states of marslite robot.
    * @return The angle value in radians.
    */
-  inline double getWrist2JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
+  inline double getWrist2JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
   {
     try {
-      return tm_joint_state->position.at(4);
+      return use_sim_ ? joint_state->position.at(7) : joint_state->position.at(6);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -251,13 +251,13 @@ public:
   /**
    * @brief Get the angle value of the sixth joint (i.e. `tm_wrist_3_joint`)
    *        of the TM5 robotic arm.
-   * @param tm_joint_state joint states of the TM5 robotic arm.
+   * @param joint_state joint states of marslite robot.
    * @return The angle value in radians.
    */
-  inline double getWrist3JointAngle(const sensor_msgs::JointState::ConstPtr& tm_joint_state) const
+  inline double getWrist3JointAngle(const sensor_msgs::JointState::ConstPtr& joint_state) const
   {
     try {
-      return tm_joint_state->position.at(5);
+      return use_sim_ ? joint_state->position.at(8) : joint_state->position.at(7);
     } catch (const std::out_of_range& e) {
       ROS_ERROR("Error: %s. Return 0 instead...", e.what());
     }
@@ -267,7 +267,9 @@ public:
   inline tf::Transform getGripperTF() const
   {
     try {
-      return this->lookUpTransformWithTimeout("/tm_base", "/robotiq_85_base_link");
+      return use_sim_ ?
+          this->lookUpTransformWithTimeout("/tm_base", "/robotiq_85_base_link") :
+          this->lookUpTransformWithTimeout("/tm_base", "/tm_tip_link");
     } catch (const TransformNotFoundException& e) {
       ROS_ERROR("Error: %s. Return default constructor of tf::Transform instead...", e.what());
     }
@@ -315,7 +317,9 @@ public:
   {
     tf::Transform initial_TF = this->getGripperTF();
     tf::Transform relative_TF(tf::Quaternion(0, 0, 0, 1), tf::Vector3(distance, 0, 0));
-    tf::Transform desired_TF = initial_TF * relative_TF * robotiq_to_flange_TF;
+    tf::Transform desired_TF = use_sim_ ?
+        initial_TF * relative_TF * base_to_tool_rotation_TF : 
+        initial_TF * tool_to_base_rotation_TF * relative_TF * base_to_tool_rotation_TF;
     return this->moveGripper(initial_TF, desired_TF);
   }
 
@@ -328,7 +332,9 @@ public:
   {
     tf::Transform initial_TF = this->getGripperTF();
     tf::Transform relative_TF(tf::Quaternion(0, 0, 0, 1), tf::Vector3(-distance, 0, 0));
-    tf::Transform desired_TF = initial_TF * relative_TF * robotiq_to_flange_TF;
+    tf::Transform desired_TF = use_sim_ ?
+        initial_TF * relative_TF * base_to_tool_rotation_TF : 
+        initial_TF * tool_to_base_rotation_TF * relative_TF * base_to_tool_rotation_TF;
     return this->moveGripper(initial_TF, desired_TF);
   }
 
@@ -341,7 +347,9 @@ public:
   {
     tf::Transform initial_TF = this->getGripperTF();
     tf::Transform relative_TF(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, distance, 0));
-    tf::Transform desired_TF = initial_TF * relative_TF * robotiq_to_flange_TF;
+    tf::Transform desired_TF = use_sim_ ?
+        initial_TF * relative_TF * base_to_tool_rotation_TF : 
+        initial_TF * tool_to_base_rotation_TF * relative_TF * base_to_tool_rotation_TF;
     return this->moveGripper(initial_TF, desired_TF);
   }
 
@@ -354,7 +362,9 @@ public:
   {
     tf::Transform initial_TF = this->getGripperTF();
     tf::Transform relative_TF(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, -distance, 0));
-    tf::Transform desired_TF = initial_TF * relative_TF * robotiq_to_flange_TF;
+    tf::Transform desired_TF = use_sim_ ?
+        initial_TF * relative_TF * base_to_tool_rotation_TF : 
+        initial_TF * tool_to_base_rotation_TF * relative_TF * base_to_tool_rotation_TF;
     return this->moveGripper(initial_TF, desired_TF);
   }
 
@@ -367,7 +377,9 @@ public:
   {
     tf::Transform initial_TF = this->getGripperTF();
     tf::Transform relative_TF(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, 0, distance));
-    tf::Transform desired_TF = initial_TF * relative_TF * robotiq_to_flange_TF;
+    tf::Transform desired_TF = use_sim_ ?
+        initial_TF * relative_TF * base_to_tool_rotation_TF : 
+        initial_TF * tool_to_base_rotation_TF * relative_TF * base_to_tool_rotation_TF;
     return this->moveGripper(initial_TF, desired_TF);
   }
 
@@ -380,7 +392,9 @@ public:
   {
     tf::Transform initial_TF = this->getGripperTF();
     tf::Transform relative_TF(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, 0, -distance));
-    tf::Transform desired_TF = initial_TF * relative_TF * robotiq_to_flange_TF;
+    tf::Transform desired_TF = use_sim_ ?
+        initial_TF * relative_TF * base_to_tool_rotation_TF : 
+        initial_TF * tool_to_base_rotation_TF * relative_TF * base_to_tool_rotation_TF;
     return this->moveGripper(initial_TF, desired_TF);
   }
 
@@ -401,7 +415,7 @@ private:
   TMKinematics::TMKinematicsPtr kinematics_ptr_;
 
   ros::NodeHandle nh_;
-  ros::Subscriber tm_joint_state_subscriber_;
+  ros::Subscriber joint_state_subscriber_;
   ros::Subscriber left_joy_subscriber_;
   ros::Subscriber left_joy_pose_subscriber_;
   StateVector joint_states_;
@@ -446,8 +460,8 @@ private:
   inline void subscribeToJointState() {
     try {
       subscribeTopicWithTimeout<MarsliteControl, sensor_msgs::JointState>(
-        this, nh_, tm_joint_state_subscriber_, "/tm_joint_states",
-        1, &MarsliteControl::TMJointStateCallback,
+        this, nh_, joint_state_subscriber_, "/joint_states",
+        1, &MarsliteControl::jointStateCallback,
         debug_msg_enabled_, timeout_, polling_sleep_duration_
       );
     } catch (const TimeOutException& e) {
@@ -618,7 +632,7 @@ private:
   /**
    * @brief Callback function for receiving robot state messages.
    */
-  void TMJointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
+  void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
   /**
    * @brief Callback function for receiving joy messages.

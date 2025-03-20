@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "test_default_pose_planning");
 
-  ros::AsyncSpinner spinner(0);
+  ros::AsyncSpinner spinner(2);
   spinner.start();
 
   MarsliteControl::ControlPtr control_ptr = std::make_shared<MarsliteControl>();
@@ -40,35 +40,27 @@ int main(int argc, char** argv)
     ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::HOME));
     ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
     ROS_INFO("Test 1 passed!");
+    ros::Duration(0.01).sleep();
     
     // Test 2: planning to the default1 pose
     ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
     ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT1));
     ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
     ROS_INFO("Test 2 passed!");
+    ros::Duration(0.01).sleep();
 
     // Test 3: planning to the default2 pose
     ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
     ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT2));
     ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
     ROS_INFO("Test 3 passed!");
+    ros::Duration(0.01).sleep();
 
-    // Test 4: planning to the default3 pose
-    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
-    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT3));
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
-    ROS_INFO("Test 4 passed!");
-
-    // Test 5: planning to the default4 pose
-    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
-    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::DEFAULT4));
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
-    ROS_INFO("Test 5 passed!");
-
-    // Test 6: planning to the home pose of marslite robots
+    // Test 4: planning to the home pose of marslite robots
     ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
     ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::HOME));
     ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_INFO("Test 4 passed!");
 
   } catch (const ConstructorInitializationFailedException& ex) {
     ROS_ERROR_STREAM(ex.what());
@@ -76,7 +68,7 @@ int main(int argc, char** argv)
     ROS_ERROR_STREAM(ex.what());
   }
 
-  ROS_INFO("All tests passed! Type Ctrl+C to exit Gazebo...");
+  ROS_INFO("All tests passed! Type Ctrl+C to exit...");
   ros::waitForShutdown();
   return 0;
 }

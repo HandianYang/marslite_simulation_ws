@@ -25,18 +25,15 @@ namespace control {
 
 ModelPredictiveControl::ModelPredictiveControl()
 {
-  // Set MPC characteristics
   this->setDynamicsMatrices();
   this->setInequalityConstraints();
   this->setWeightMatrices();
 
-  // Cast the MPC problem as QP problem
   this->castMPCToQPHessian();
   this->castMPCToQPGradient();
   this->castMPCToQPConstraintMatrix();
   this->castMPCToQPConstraintVectors();
 
-  // Initialize the QP solver
   if (!this->initializeQPSolver()) {
     ROS_ERROR_STREAM("Error initializing QP solver.");
     throw ConstructorInitializationFailedException();
@@ -45,12 +42,10 @@ ModelPredictiveControl::ModelPredictiveControl()
 
 bool ModelPredictiveControl::initializeQPSolver()
 {
-  // Set the warm start
   solver_.settings()->setWarmStart(true);
   solver_.settings()->setVerbosity(false);
-  solver_.settings()->setMaxIteration(1000);
+  solver_.settings()->setMaxIteration(10000);
 
-  // Set the initial data of the QP solver
   solver_.data()->setNumberOfVariables(QP_STATE_SIZE);
   solver_.data()->setNumberOfConstraints(QP_BOUND_SIZE);
   if(!solver_.data()->setHessianMatrix(hessian_matrix_))   return false;
@@ -58,32 +53,29 @@ bool ModelPredictiveControl::initializeQPSolver()
   if(!solver_.data()->setLinearConstraintsMatrix(constraint_matrix_))  return false;
   if(!solver_.data()->setLowerBound(lower_bound_))   return false;
   if(!solver_.data()->setUpperBound(upper_bound_))   return false;
-
-  // Instantiate the solver
   if(!solver_.initSolver()) return false;
-
+  
   return true;
 }
 
 bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectory_waypoints)
 {
   if (this->isOutOfBound(x0_)) {
-    ROS_ERROR_STREAM("Initial pose is out of bound.");
+    ROS_ERROR_STREAM("  Initial pose is out of bound.");
     return false;
   }
 
   if (this->isOutOfBound(xRef_)) {
-    ROS_ERROR_STREAM("Target pose is out of bound.");
+    ROS_ERROR_STREAM("  Target pose is out of bound.");
     return false;
   }
 
-  // Update the gradient and the constraint vectors
   if (!this->updateGradient(xRef_)) {
-    ROS_ERROR_STREAM("Error updating the gradient.");
+    ROS_ERROR_STREAM("  Error updating the gradient.");
     return false;
   }
   if (!this->updateConstraintVectors(x0_)) {
-    ROS_ERROR_STREAM("Error updating the constraint vectors.");
+    ROS_ERROR_STREAM("  Error updating the constraint vectors.");
     return false;
   }
 
@@ -97,13 +89,6 @@ bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajector
   InputVector u;              // current input
   StateVector x = x0_;        // current state
   size_t counter = 0;         // counter for the trajectory waypoints
-
-  trajectory_msgs::JointTrajectoryPoint trajectory_waypoint;
-  trajectory_waypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
-  trajectory_waypoint.velocities = std::vector<double>(6, 0.0);
-  trajectory_waypoint.time_from_start = ros::Duration(0.0);
-  trajectory_waypoints.push_back(trajectory_waypoint);
-
   while ((x - xRef_).norm() >= MPC_ZERO) {
     if (solver_.solveProblem() != OsqpEigen::ErrorExitFlag::NoError) {
       ROS_ERROR_STREAM("\tUnable to solve the problem.");
@@ -117,12 +102,13 @@ bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajector
 
     QPSolution = solver_.getSolution();
     u = QPSolution.block(QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1);
-
-    trajectory_waypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
+    
+    trajectory_msgs::JointTrajectoryPoint trajectory_waypoint;
     trajectory_waypoint.velocities = {u[0], u[1], u[2], u[3], u[4], u[5]};
+    trajectory_waypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
     trajectory_waypoint.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
     trajectory_waypoints.push_back(trajectory_waypoint);
-    
+     
     x = A_ * x + B_ * u;
     if (!this->updateConstraintVectors(x)) {
       ROS_ERROR_STREAM("\tError updating the constraint vectors.");
@@ -130,20 +116,23 @@ bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajector
     }
   }
 
-  // Downsample the trajectory if it exceeds 60 waypoints
-  if (trajectory_waypoints.size() > 60) {
-    std::vector<trajectory_msgs::JointTrajectoryPoint> downsampled_waypoints;
-    double step = trajectory_waypoints.size() / 59.;
-    for (double i = 0; i < trajectory_waypoints.size(); i += step) {
-      downsampled_waypoints.push_back(trajectory_waypoints[(int)i]);
-      // std::cout << i << ' ';
-    }
-    // Ensure the last waypoint is included
-    if (downsampled_waypoints.size() < 60) {
-      downsampled_waypoints.push_back(trajectory_waypoints.back());
-    }
-    trajectory_waypoints = downsampled_waypoints;
-  }
+  // TODO: Add downsampling
+  // TODO: Modify the speed of the trajectory
+  return true;
+}
+
+bool ModelPredictiveControl::solveWithoutQP(std::vector<trajectory_msgs::JointTrajectoryPoint>& trajectory_waypoints)
+{
+  trajectory_msgs::JointTrajectoryPoint trajectory_waypoint;
+  trajectory_waypoint.positions = {x0_[0], x0_[1], x0_[2], x0_[3], x0_[4], x0_[5]};
+  trajectory_waypoint.velocities = {0, 0, 0, 0, 0, 0};
+  trajectory_waypoint.time_from_start = ros::Duration(0.0);
+  trajectory_waypoints.push_back(trajectory_waypoint);
+
+  trajectory_waypoint.positions = {xRef_[0], xRef_[1], xRef_[2], xRef_[3], xRef_[4], xRef_[5]};
+  trajectory_waypoint.velocities = {0, 0, 0, 0, 0, 0};
+  trajectory_waypoint.time_from_start = ros::Duration(1.0); // TODO: Modify the duration
+  trajectory_waypoints.push_back(trajectory_waypoint);
 
   return true;
 }
@@ -179,8 +168,8 @@ void ModelPredictiveControl::setInequalityConstraints()
   xMin_ = marslite::constraint::POSITION_MIN;
   uMax_ = marslite::constraint::VELOCITY_MAX;
   uMin_ = marslite::constraint::VELOCITY_MIN;
-  aMax_ = marslite::constraint::ACCELERATION_MAX;
-  aMin_ = marslite::constraint::ACCELERATION_MIN;
+  aMax_ = marslite::constraint::INPUT_FREE_MAX;
+  aMin_ = marslite::constraint::INPUT_FREE_MIN;
 }
 
 void ModelPredictiveControl::setWeightMatrices()

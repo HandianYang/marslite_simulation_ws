@@ -18,11 +18,17 @@ This test verifies the functionality of `tm_kinematics.h`, which calculates forw
 roslaunch marslite_control test_kinematics.launch
 ```
 
+### `test_gripper_moving`
+
+This test sends control commands to the gripper, making it move toward 6 directions in a given distance. The purpose of this test is to verify the functionality of `tm_kinematics.h` and `model_predictive_control.h`.
+
+```Shell
+roslaunch marslite_control test_gripper_moving.launch
+```
+
 ### `test_joystick_teleoperation`
 
 This test implements the teleoperation of the robotic arm, driven by the pose of the VR joysticks, which is recognized as some ROS topic in `PoseStamped` type. In the test, the pose of joysticks is passed by the `/unity/joy_pose/left` topic.
-
-**[Note] By default, this launch requires `ros_sharp_communication.launch` to be launched beforehand to connect to Unity through WebSocket.** 
 
 ```Shell
 roslaunch marslite_control test_joystick_teleoperation.launch

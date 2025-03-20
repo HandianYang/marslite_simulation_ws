@@ -115,41 +115,41 @@ static const StateVector POSITION_MIN = ( StateVector()
 ).finished();
 
 // upper constraint vector of marslite's joint velocity
-// [180°/s, 180°/s, 180°/s, 183°/s, 183°/s, 183°/s, 0.7m/s, 180°/s]
+// [180°/s, 180°/s, 180°/s, 225/s, 225/s, 225/s, 0.7m/s, 180°/s]
 static const InputVector VELOCITY_MAX = ( InputVector()
-    << 3.15,
-       3.15,
-       3.15,
-       3.2,
-       3.2,
-       3.2,
+    << 3.14159,
+       3.14159,
+       3.14159,
+       3.92699,
+       3.92699,
+       3.92699,
        0.7,
-       3.15
+       3.14159
 ).finished();
 
 // lower constraint vector of marslite's joint velocity
 // [-180°/s, -180°/s, -180°/s, -183°/s, -183°/s, -183°/s, -0.7m/s, -180°/s]
 static const InputVector VELOCITY_MIN = ( InputVector()
-    << -3.15,
-       -3.15,
-       -3.15,
-       -3.2,
-       -3.2,
-       -3.2,
+    << -3.14159,
+       -3.14159,
+       -3.14159,
+       -3.92699,
+       -3.92699,
+       -3.92699,
        -0.7,
-       -3.15
+       -3.14159
 ).finished();
 
 // upper constraint vector of marslite's joint acceleration
 static const InputVector ACCELERATION_MAX = ( InputVector()
-    << OsqpEigen::INFTY, 
-       OsqpEigen::INFTY,
-       OsqpEigen::INFTY,
-       OsqpEigen::INFTY,
-       OsqpEigen::INFTY,
-       OsqpEigen::INFTY,
-       OsqpEigen::INFTY,
-       OsqpEigen::INFTY
+    <<  OsqpEigen::INFTY,
+        OsqpEigen::INFTY,
+        OsqpEigen::INFTY,
+        OsqpEigen::INFTY,
+        OsqpEigen::INFTY,
+        OsqpEigen::INFTY,
+        OsqpEigen::INFTY,
+        OsqpEigen::INFTY
 ).finished();
 
 // lower constraint vector of marslite's joint acceleration

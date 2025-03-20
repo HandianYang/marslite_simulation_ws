@@ -31,7 +31,7 @@ namespace control {
 
 MarsliteControl::MarsliteControl(const ros::NodeHandle& nh)
     : nh_(nh), loop_rate_(ros::Rate(25)),
-    timeout_(ros::Duration(30)), polling_sleep_duration_(ros::Duration(0.1)),
+    timeout_(ros::Duration(120)), polling_sleep_duration_(ros::Duration(0.1)),
     is_hand_trigger_pressed_(false), is_index_trigger_pressed_(false)
 {
   try {
@@ -75,14 +75,6 @@ MarsliteControl::MarsliteControl(const ros::NodeHandle& nh)
       "tm_wrist_3_joint"
     };
   }
-
-  // Set the position and velocity tolerances
-  trajectory_goal_.goal_tolerance.resize(6);
-  for (size_t i = 0; i < 6; i++) {
-    trajectory_goal_.goal_tolerance[i].name = trajectory_goal_.trajectory.joint_names[i];
-    trajectory_goal_.goal_tolerance[i].position = 0.01;   // 1 cm tolerance
-    trajectory_goal_.goal_tolerance[i].velocity = 0.05;   // 5 cm/s tolerance
-  }
 }
 
 /* ********************************************** *
@@ -107,13 +99,13 @@ void MarsliteControl::joystickTeleoperation()
           previous_gripper_TF = desired_gripper_TF = this->getGripperTF();
           first_initialization = false;
 
-          ROS_INFO_STREAM("Begin the teleoperation...");
+          ROS_INFO_STREAM_COND(debug_msg_enabled_, "Begin the teleoperation...");
           break;
         }
 
         current_left_joy_pose_TF = this->getLeftJoyPoseTF();
         if (this->isSamePose(previous_left_joy_pose_TF, current_left_joy_pose_TF)) {
-          ROS_WARN_THROTTLE(2, "The left joystick is not moving. Skip the teleoperation...");
+          ROS_WARN_THROTTLE(5, "The left joystick is not moving. Skip the teleoperation...");
           break;
         }
 
@@ -121,14 +113,16 @@ void MarsliteControl::joystickTeleoperation()
           previous_left_joy_pose_TF,
           current_left_joy_pose_TF
         );
-        desired_gripper_TF = previous_gripper_TF * relative_gripper_TF * robotiq_to_flange_TF;
+        desired_gripper_TF = use_sim_ ?
+            previous_gripper_TF * relative_gripper_TF * base_to_tool_rotation_TF : 
+            previous_gripper_TF * tool_to_base_rotation_TF * relative_gripper_TF * base_to_tool_rotation_TF;
         if (!this->moveGripper(previous_gripper_TF, desired_gripper_TF)) {
           ROS_ERROR_STREAM("Failed to move the gripper. Ignore the command...");
           break;
         }
 
         previous_left_joy_pose_TF = current_left_joy_pose_TF;
-        previous_gripper_TF = desired_gripper_TF * robotiq_to_flange_TF.inverse();
+        previous_gripper_TF = desired_gripper_TF * tool_to_base_rotation_TF;
       } else {
         first_initialization = true;
       }
@@ -144,13 +138,13 @@ bool MarsliteControl::moveGripper(const tf::Transform& previous_gripper_TF,
   TMKinematics::TransformationMatrix desired_gripper_TM =
       this->convertToTransformationMatrix(desired_gripper_TF);
   
-  Eigen::MatrixXd IKSolution = kinematics_ptr_->inverseKinematics(desired_gripper_TM);
-  if (IKSolution.rows() == 0) {
+  Eigen::MatrixXd ik_solution = kinematics_ptr_->inverseKinematics(desired_gripper_TM);
+  if (ik_solution.rows() == 0) {
     ROS_WARN_STREAM("Cannot find any inverse kinematics solution. Ignore the command...");
     return false;
   }
   
-  StateVector desired_joint_states = this->findClosestValidJointAngles(IKSolution);
+  StateVector desired_joint_states = this->findClosestValidJointAngles(ik_solution);
   if (desired_joint_states == StateVector::Zero()) {
     ROS_WARN_STREAM("Cannot find any valid solution. Ignore the command...");
     return false;
@@ -174,12 +168,16 @@ bool MarsliteControl::planTrajectoryWithQPSolver()
 {
   if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
     return false;
-
+  if (trajectory_goal_.trajectory.points.empty())
+    return true;
+  
   trajectory_action_client_->sendGoal(trajectory_goal_);
-  trajectory_action_client_->waitForResult();
+  if (!trajectory_action_client_->waitForResult())
+    return false;
 
-  ROS_INFO_STREAM_COND(debug_msg_enabled_, "  Planning result: " << trajectory_action_client_->getState().toString());
   if (trajectory_action_client_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED) {
+    ROS_ERROR_STREAM("  Planning result: " <<
+        trajectory_action_client_->getState().toString());
     return false;
   }
 
@@ -191,12 +189,16 @@ bool MarsliteControl::planTrajectoryWithQPSolver(const ros::Duration& timeout)
 {
   if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
     return false;
-
+  if (trajectory_goal_.trajectory.points.empty())
+    return true;
+  
   trajectory_action_client_->sendGoal(trajectory_goal_);
-  trajectory_action_client_->waitForResult(timeout);
+  if (!trajectory_action_client_->waitForResult(timeout))
+    return false;
 
-  ROS_INFO_STREAM_COND(debug_msg_enabled_, "  Planning result: " << trajectory_action_client_->getState().toString());
   if (trajectory_action_client_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED) {
+    ROS_ERROR_STREAM("  Planning result: " <<
+        trajectory_action_client_->getState().toString());
     return false;
   }
 
@@ -315,28 +317,28 @@ tf::Transform MarsliteControl::getScaledRelativeTF(
 }
 
 MarsliteControl::StateVector MarsliteControl::findClosestValidJointAngles(
-    const Eigen::MatrixXd& IKSolution) const
+    const Eigen::MatrixXd& ik_solution) const
 {
   StateVector desired_joint_states = StateVector::Zero();
   double min_distance = std::numeric_limits<double>::max();
   double current_distance = 0;
   bool is_valid = true;
 
-  for (uint8_t i = 0; i < IKSolution.rows(); ++i) {
+  for (uint8_t i = 0; i < ik_solution.rows(); ++i) {
     is_valid = true;
     for (uint8_t j = 0; j < 6; ++j) {
-      if (IKSolution(i,j) > marslite::constraint::POSITION_MAX(j) || 
-          IKSolution(i,j) < marslite::constraint::POSITION_MIN(j)) {
+      if (ik_solution(i,j) > marslite::constraint::POSITION_MAX(j) || 
+          ik_solution(i,j) < marslite::constraint::POSITION_MIN(j)) {
         is_valid = false;
         break;
       }
     }
     if (!is_valid) continue;
 
-    current_distance = (IKSolution.row(i).transpose()-joint_states_.block(0, 0, 6, 1)).norm();
+    current_distance = (ik_solution.row(i).transpose()-joint_states_.block(0, 0, 6, 1)).norm();
     if (current_distance < min_distance) {
       min_distance = current_distance;
-      desired_joint_states.block(0, 0, 6, 1) = IKSolution.row(i).transpose();
+      desired_joint_states.block(0, 0, 6, 1) = ik_solution.row(i).transpose();
     }
   }
 
@@ -344,7 +346,7 @@ MarsliteControl::StateVector MarsliteControl::findClosestValidJointAngles(
 }
 
 
-void MarsliteControl::TMJointStateCallback(const sensor_msgs::JointState::ConstPtr& msg)
+void MarsliteControl::jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg)
 {
   joint_states_ << this->getShoulder1JointAngle(msg),
                    this->getShoulder2JointAngle(msg),
