@@ -31,7 +31,7 @@ namespace control {
 
 MarsliteControl::MarsliteControl(const ros::NodeHandle& nh)
     : nh_(nh), loop_rate_(ros::Rate(25)),
-    timeout_(ros::Duration(120)), polling_sleep_duration_(ros::Duration(0.1)),
+    timeout_(ros::Duration(120)), polling_sleep_duration_(ros::Duration(0.01)),
     is_hand_trigger_pressed_(false), is_index_trigger_pressed_(false)
 {
   try {
@@ -105,7 +105,7 @@ void MarsliteControl::joystickTeleoperation()
 
         current_left_joy_pose_TF = this->getLeftJoyPoseTF();
         if (this->isSamePose(previous_left_joy_pose_TF, current_left_joy_pose_TF)) {
-          ROS_WARN_THROTTLE(5, "The left joystick is not moving. Skip the teleoperation...");
+          ROS_WARN_THROTTLE(2, "The left joystick is not moving. Skip the teleoperation...");
           break;
         }
 
@@ -137,7 +137,6 @@ bool MarsliteControl::moveGripper(const tf::Transform& previous_gripper_TF,
 {
   TMKinematics::TransformationMatrix desired_gripper_TM =
       this->convertToTransformationMatrix(desired_gripper_TF);
-  
   Eigen::MatrixXd ik_solution = kinematics_ptr_->inverseKinematics(desired_gripper_TM);
   if (ik_solution.rows() == 0) {
     ROS_WARN_STREAM("Cannot find any inverse kinematics solution. Ignore the command...");
@@ -150,7 +149,7 @@ bool MarsliteControl::moveGripper(const tf::Transform& previous_gripper_TF,
     return false;
   }
 
-  if (this->isTargetJointTooFar(desired_joint_states) &&
+  if (use_joystick_ && this->isTargetJointTooFar(desired_joint_states) &&
       this->isTargetPositionTooFar(previous_gripper_TF, desired_gripper_TF)) {
     ROS_WARN_STREAM("Solution too far from the current joint states. Ignore the command...");
     return false;
@@ -168,6 +167,8 @@ bool MarsliteControl::planTrajectoryWithQPSolver()
 {
   if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
     return false;
+
+  // The target pose is almost at the initial pose
   if (trajectory_goal_.trajectory.points.empty())
     return true;
   
@@ -189,6 +190,7 @@ bool MarsliteControl::planTrajectoryWithQPSolver(const ros::Duration& timeout)
 {
   if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
     return false;
+  // The target pose is almost at the initial pose
   if (trajectory_goal_.trajectory.points.empty())
     return true;
   
@@ -263,16 +265,15 @@ tf::Transform MarsliteControl::lookUpTransformWithTimeout(
     const std::string& target_frame,
     const std::string& source_frame) const
 {
-  tf::TransformListener listener;
   tf::StampedTransform stampedTF;
   tf::Transform TF;
-
+  
   try {
     ROS_INFO_STREAM_COND(debug_msg_enabled_, "Obtain Transform from "
         << target_frame << " to " << source_frame << " ...");
-    listener.waitForTransform(target_frame, source_frame, ros::Time(0),
+    tf_listener_.waitForTransform(target_frame, source_frame, ros::Time(0),
         timeout_, polling_sleep_duration_);
-    listener.lookupTransform(target_frame, source_frame, ros::Time(0), stampedTF);
+    tf_listener_.lookupTransform(target_frame, source_frame, ros::Time(0), stampedTF);
     TF.setOrigin(stampedTF.getOrigin());
     TF.setRotation(stampedTF.getRotation());
     ROS_INFO_STREAM_COND(debug_msg_enabled_, "Transform obtained!");
@@ -287,15 +288,14 @@ tf::StampedTransform MarsliteControl::lookUpStampedTransformWithTimeout(
     const std::string& target_frame,
     const std::string& source_frame) const
 {
-  tf::TransformListener listener;
   tf::StampedTransform stampedTF;
 
   try {
     ROS_INFO_STREAM_COND(debug_msg_enabled_, "Obtain StampedTransform from "
         << target_frame << " to " << source_frame << " ...");
-    listener.waitForTransform(target_frame, source_frame, ros::Time(0),
+    tf_listener_.waitForTransform(target_frame, source_frame, ros::Time(0),
         timeout_, polling_sleep_duration_);
-    listener.lookupTransform(target_frame, source_frame, ros::Time(0), stampedTF);
+    tf_listener_.lookupTransform(target_frame, source_frame, ros::Time(0), stampedTF);
     ROS_INFO_STREAM_COND(debug_msg_enabled_, "StampedTransform obtained!");
   } catch (tf::TransformException &ex) {
     throw TransformNotFoundException(target_frame, source_frame);

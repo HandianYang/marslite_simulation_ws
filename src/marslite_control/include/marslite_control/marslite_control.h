@@ -420,6 +420,7 @@ private:
   ros::Subscriber left_joy_pose_subscriber_;
   StateVector joint_states_;
   geometry_msgs::PoseStamped left_joy_pose_;
+  tf::TransformListener tf_listener_;
 
   ros::Rate loop_rate_;
   ros::Duration timeout_;

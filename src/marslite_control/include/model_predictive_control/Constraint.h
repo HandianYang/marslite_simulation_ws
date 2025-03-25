@@ -142,26 +142,26 @@ static const InputVector VELOCITY_MIN = ( InputVector()
 
 // upper constraint vector of marslite's joint acceleration
 static const InputVector ACCELERATION_MAX = ( InputVector()
-    <<  OsqpEigen::INFTY,
-        OsqpEigen::INFTY,
-        OsqpEigen::INFTY,
-        OsqpEigen::INFTY,
-        OsqpEigen::INFTY,
-        OsqpEigen::INFTY,
-        OsqpEigen::INFTY,
-        OsqpEigen::INFTY
+    <<  30,
+        30,
+        30,
+        40,
+        40,
+        40,
+        5,
+        30
 ).finished();
 
 // lower constraint vector of marslite's joint acceleration
 static const InputVector ACCELERATION_MIN = ( InputVector()
-    << -OsqpEigen::INFTY, 
-       -OsqpEigen::INFTY,
-       -OsqpEigen::INFTY,
-       -OsqpEigen::INFTY,
-       -OsqpEigen::INFTY,
-       -OsqpEigen::INFTY,
-       -OsqpEigen::INFTY,
-       -OsqpEigen::INFTY
+    << -30,
+       -30,
+       -30,
+       -40,
+       -40,
+       -40,
+       -5,
+       -30
 ).finished();
 
 } // namespace constraint

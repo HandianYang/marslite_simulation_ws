@@ -85,10 +85,18 @@ bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajector
     return true;
   }
 
-  Eigen::VectorXd QPSolution; // QPSolution vector
-  InputVector u;              // current input
-  StateVector x = x0_;        // current state
-  size_t counter = 0;         // counter for the trajectory waypoints
+  Eigen::VectorXd qp_solution;  // QP solution vector
+  InputVector u;                // current input
+  StateVector x = x0_;          // current state
+  size_t counter = 0;           // counter for the trajectory waypoints
+  trajectory_msgs::JointTrajectoryPoint trajectory_waypoint;  // trajectory waypoint
+
+  // (Crucial) Add the initial pose with zero velocity
+  trajectory_waypoint.velocities = std::vector<double>(6, 0.0);
+  trajectory_waypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
+  trajectory_waypoint.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
+  trajectory_waypoints.push_back(trajectory_waypoint);
+
   while ((x - xRef_).norm() >= MPC_ZERO) {
     if (solver_.solveProblem() != OsqpEigen::ErrorExitFlag::NoError) {
       ROS_ERROR_STREAM("\tUnable to solve the problem.");
@@ -100,24 +108,38 @@ bool ModelPredictiveControl::solveQP(std::vector<trajectory_msgs::JointTrajector
       return false;
     }
 
-    QPSolution = solver_.getSolution();
-    u = QPSolution.block(QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1);
+    qp_solution = solver_.getSolution();
+    u = qp_solution.block(QP_DYNAMIC_SIZE, 0, MPC_INPUT_SIZE, 1);
+    x = A_ * x + B_ * u;
     
-    trajectory_msgs::JointTrajectoryPoint trajectory_waypoint;
     trajectory_waypoint.velocities = {u[0], u[1], u[2], u[3], u[4], u[5]};
     trajectory_waypoint.positions  = {x[0], x[1], x[2], x[3], x[4], x[5]};
     trajectory_waypoint.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
     trajectory_waypoints.push_back(trajectory_waypoint);
      
-    x = A_ * x + B_ * u;
     if (!this->updateConstraintVectors(x)) {
       ROS_ERROR_STREAM("\tError updating the constraint vectors.");
       return false;
     }
   }
 
-  // TODO: Add downsampling
-  // TODO: Modify the speed of the trajectory
+  // (Crucial) Add the target pose with zero velocity
+  trajectory_waypoint.velocities = std::vector<double>(6, 0.0);
+  trajectory_waypoint.positions  = {xRef_[0], xRef_[1], xRef_[2], xRef_[3], xRef_[4], xRef_[5]};
+  trajectory_waypoint.time_from_start = ros::Duration((counter++) * MPC_SAMPLE_TIME);
+  trajectory_waypoints.push_back(trajectory_waypoint);
+
+  // Downsample to 6 waypoints, including the initial and target poses
+  // TODO: Modify the acceleration and the number of downsampled waypoints
+  trajectory_waypoints = {
+    trajectory_waypoints.front(),
+    trajectory_waypoints[1],
+    trajectory_waypoints[2],
+    trajectory_waypoints[3],
+    trajectory_waypoints[trajectory_waypoints.size() / 2],
+    trajectory_waypoints.back()
+  };
+
   return true;
 }
 
@@ -168,8 +190,8 @@ void ModelPredictiveControl::setInequalityConstraints()
   xMin_ = marslite::constraint::POSITION_MIN;
   uMax_ = marslite::constraint::VELOCITY_MAX;
   uMin_ = marslite::constraint::VELOCITY_MIN;
-  aMax_ = marslite::constraint::INPUT_FREE_MAX;
-  aMin_ = marslite::constraint::INPUT_FREE_MIN;
+  aMax_ = marslite::constraint::ACCELERATION_MAX;
+  aMin_ = marslite::constraint::ACCELERATION_MIN;
 }
 
 void ModelPredictiveControl::setWeightMatrices()
