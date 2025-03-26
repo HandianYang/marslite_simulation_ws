@@ -38,9 +38,7 @@ int main(int argc, char** argv)
     MarsliteControl::ControlPtr control_ptr = std::make_shared<MarsliteControl>();
 
     // Preparation: move the robot to the HOME pose
-    ROS_ASSERT(control_ptr->updateInitialPoseFromCurrent());
-    ROS_ASSERT(control_ptr->setTargetPose(marslite::pose::HOME));
-    ROS_ASSERT(control_ptr->planTrajectoryWithQPSolver());
+    ROS_ASSERT(control_ptr->planTrajectory(marslite::pose::HOME));
     ROS_INFO("Preparation done.");
     ros::Duration(0.01).sleep();
     

@@ -431,9 +431,11 @@ private:
   
   bool use_sim_;
   bool debug_msg_enabled_;
+  bool use_joystick_;
   bool is_hand_trigger_pressed_;
   bool is_index_trigger_pressed_;
-  bool use_joystick_;
+  bool is_button_X_pressed_over_3s_;
+  bool is_button_Y_pressed_;
 
   double position_scale_;
   double orientation_scale_;

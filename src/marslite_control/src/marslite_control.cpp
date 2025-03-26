@@ -93,7 +93,17 @@ void MarsliteControl::joystickTeleoperation()
   bool first_initialization = true;
   while (ros::ok()) {
     do {  // dummy do-while loop for the break statement
-      if (is_hand_trigger_pressed_ && is_index_trigger_pressed_) {
+      if (is_button_X_pressed_over_3s_) {
+        // Press button X over 3 seconds to exit the teleoperation
+        ROS_INFO_STREAM("Exit the teleoperation...");
+        return;
+      } else if (is_button_Y_pressed_) {
+        // Press button Y to reset to the preset pose
+        ROS_INFO_STREAM_COND(debug_msg_enabled_, "Reset to the preset pose...");
+        this->planTrajectory(marslite::pose::PRESET_Y);
+        break;
+      } else if (is_hand_trigger_pressed_ && is_index_trigger_pressed_) {
+        // Press both hand and index triggers to unlock the VR grip
         if (first_initialization) {
           previous_left_joy_pose_TF = current_left_joy_pose_TF = this->getLeftJoyPoseTF();
           previous_gripper_TF = desired_gripper_TF = this->getGripperTF();
@@ -102,7 +112,7 @@ void MarsliteControl::joystickTeleoperation()
           ROS_INFO_STREAM_COND(debug_msg_enabled_, "Begin the teleoperation...");
           break;
         }
-
+        
         current_left_joy_pose_TF = this->getLeftJoyPoseTF();
         if (this->isSamePose(previous_left_joy_pose_TF, current_left_joy_pose_TF)) {
           ROS_WARN_THROTTLE(2, "The left joystick is not moving. Skip the teleoperation...");
@@ -110,8 +120,8 @@ void MarsliteControl::joystickTeleoperation()
         }
 
         relative_gripper_TF = this->getScaledRelativeTF(
-          previous_left_joy_pose_TF,
-          current_left_joy_pose_TF
+            previous_left_joy_pose_TF,
+            current_left_joy_pose_TF
         );
         desired_gripper_TF = use_sim_ ?
             previous_gripper_TF * relative_gripper_TF * base_to_tool_rotation_TF : 
@@ -122,7 +132,8 @@ void MarsliteControl::joystickTeleoperation()
         }
 
         previous_left_joy_pose_TF = current_left_joy_pose_TF;
-        previous_gripper_TF = desired_gripper_TF * tool_to_base_rotation_TF;
+        previous_gripper_TF = use_sim_ ?
+            desired_gripper_TF * tool_to_base_rotation_TF : desired_gripper_TF;
       } else {
         first_initialization = true;
       }
@@ -167,7 +178,6 @@ bool MarsliteControl::planTrajectoryWithQPSolver()
 {
   if (!mpc_ptr_->solveQP(trajectory_goal_.trajectory.points))
     return false;
-
   // The target pose is almost at the initial pose
   if (trajectory_goal_.trajectory.points.empty())
     return true;
@@ -354,12 +364,13 @@ void MarsliteControl::jointStateCallback(const sensor_msgs::JointState::ConstPtr
                    this->getWrist1JointAngle(msg),
                    this->getWrist2JointAngle(msg),
                    this->getWrist3JointAngle(msg),
-                   0,  // mobile base position
-                   0;  // mobile base orientation
+                       0,  // mobile base position
+                       0;  // mobile base orientation
 }
 
 void MarsliteControl::leftJoyCallback(const sensor_msgs::Joy::ConstPtr& msg)
 {
+  // axes[0] and axes[1] are for mobile platform teleoperation
   switch (msg->axes.size()) {
     case 4:
       // [3] primary hand trigger
@@ -368,12 +379,31 @@ void MarsliteControl::leftJoyCallback(const sensor_msgs::Joy::ConstPtr& msg)
       // [2] primary index trigger
       is_index_trigger_pressed_ = (msg->axes[2] > kTriggerThreshold);
       break;
-    case 0:
-      ROS_WARN_ONCE("[leftJoyCallback] Failed to receive the joy topic.");
+    default:
+      ROS_WARN_ONCE("Mismatch number of left joystick axes (%lu).", msg->axes.size());
       ROS_WARN_ONCE("  Please check your joystick(s) setup or rosbridge connection.");
       break;
+  }
+
+  switch (msg->buttons.size()) {
+    case 2:
+      // [1] Y
+      is_button_Y_pressed_ = (msg->buttons[1] == 1);
+    case 1:
+      // [0] X
+      static ros::Time button_X_pressed_time;
+      if (msg->buttons[0] == 1) {
+        if (button_X_pressed_time.isZero()) {
+          button_X_pressed_time = ros::Time::now();
+        } else if ((ros::Time::now() - button_X_pressed_time).toSec() > 3.0) {
+          is_button_X_pressed_over_3s_ = true;
+        }
+      } else {
+        button_X_pressed_time = ros::Time(0);
+      }
+      break;
     default:
-      ROS_WARN_ONCE("[leftJoyCallback] Mismatch number of left joystick axes (%lu).", msg->axes.size());
+      ROS_WARN_ONCE("Mismatch number of left joystick buttons (%lu).", msg->axes.size());
       ROS_WARN_ONCE("  Please check your joystick(s) setup or rosbridge connection.");
       break;
   }

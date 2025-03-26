@@ -31,9 +31,7 @@ int main(int argc, char** argv)
 
   try {
     MarsliteControl::ControlPtr control_ptr= std::make_shared<MarsliteControl>();
-    control_ptr->updateInitialPoseFromCurrent();
-    control_ptr->setTargetPose(marslite::pose::HOME);
-    control_ptr->planTrajectoryWithQPSolver();
+    control_ptr->planTrajectory(marslite::pose::PRESET_Y);
     ROS_INFO("Preparation done.");
 
     control_ptr->joystickTeleoperation();

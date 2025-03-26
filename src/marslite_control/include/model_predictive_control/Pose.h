@@ -104,6 +104,18 @@ static const StateVector DEFAULT4 = ( StateVector()
      deg2Rad(0)
 ).finished();
 
+static const StateVector PRESET_Y = ( StateVector()
+  << deg2Rad(0),
+     deg2Rad(-9),
+     deg2Rad(80),
+     deg2Rad(-68.66),
+     deg2Rad(90),
+     deg2Rad(0),
+     0,
+     deg2Rad(0)
+).finished();
+
+
 } // namespace pose
 
 } // namespace marslite
