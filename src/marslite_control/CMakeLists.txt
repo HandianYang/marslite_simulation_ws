@@ -115,3 +115,6 @@ target_link_libraries(test_joystick_teleoperation ${catkin_LIBRARIES} control_li
 
 add_executable(test_kinematics test/test_kinematics.cpp)
 target_link_libraries(test_kinematics ${catkin_LIBRARIES} tm_kinematics_lib tm700_kin_lib)
+
+add_executable(test_cartesian_control test/test_cartesian_control.cpp)
+target_link_libraries(test_cartesian_control ${catkin_LIBRARIES})

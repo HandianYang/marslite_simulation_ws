@@ -265,10 +265,10 @@ void MarsliteControl::connectJointTrajectoryActionServer()
       "/tm_joint_trajectory_action";
   trajectory_action_client_ = std::make_shared<JointTrajectoryAction>(action_server_name, true);
 
-  ROS_INFO_STREAM("Connecting to FollowJointTrajectoryAction action server...");
+  ROS_INFO_STREAM("Connecting to " << action_server_name << " action server...");
   if (!trajectory_action_client_->waitForServer(timeout_))
     throw TimeOutException(timeout_);
-  ROS_INFO_STREAM("FollowJointTrajectoryAction action server connected!");
+  ROS_INFO_STREAM(action_server_name << " action server connected!");
 }
 
 tf::Transform MarsliteControl::lookUpTransformWithTimeout(

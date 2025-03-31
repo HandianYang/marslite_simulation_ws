@@ -34,6 +34,32 @@ This test implements the teleoperation of the robotic arm, driven by the pose of
 roslaunch marslite_control test_joystick_teleoperation.launch
 ```
 
+
+### `test_cartesian_control` (real robot ONLY)
+
+Bringup MARS and cartesian controllers:
+```bash
+(under kyyoung)
+$ source /home/kyyoung/josh/detect_patient_ws/devel/setup.bash
+$ roslaunch robot_control mars_lite_bringup.launch
+```
+
+Launch ROS#:
+```bash
+(under root)
+$ sd
+$ roslaunch file_server ros_sharp_communication.launch
+```
+
+Test joystick teleoperation using cartesian controllers:
+```bash
+(under root)
+$ sd
+$ rosrun marslite_control test_cartesian_control
+```
+
+**[Note] DO NOT launch default `mars_lite_bringup.launch` for this test**
+
 ## References
 
 ### `marslite::mpc::ModelPredictiveControl`
