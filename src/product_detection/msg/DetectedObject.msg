@@ -1,0 +1,3 @@
+string label
+geometry_msgs/Point position
+float64 confidence

@@ -11,6 +11,8 @@ add_compile_options(-std=c++14)
 # Find catkin packages and libraries for catkin and system dependencies
 ################################################################################
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
+  message_generation
   roscpp
   rospy
   sensor_msgs
@@ -28,6 +30,20 @@ find_package(OpenCV REQUIRED)
 # Declare ROS messages, services and actions
 ################################################################################
 
+add_message_files(
+  FILES
+  BoundingBox.msg
+  BoundingBoxArray.msg
+  DetectedObject.msg
+  DetectedObjectArray.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
+
 ################################################################################
 # Declare ROS dynamic reconfigure parameters
 ################################################################################
@@ -39,6 +55,8 @@ find_package(OpenCV REQUIRED)
 
 catkin_package(
   CATKIN_DEPENDS
+    geometry_msgs
+    message_runtime
     roscpp
     rospy
     sensor_msgs
@@ -69,6 +87,9 @@ include_directories(
 catkin_install_python(PROGRAMS
   examples/object_detection_viewer.py
   examples/opencv_pointcloud_viewer.py
+  scripts/yolo_detection_publisher.py
+  scripts/yolo_detection_publisher_new.py
+  scripts/object_detection_3d.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
